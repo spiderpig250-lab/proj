@@ -3,4 +3,3 @@ pandas
 requests
 thefuzz
 python-Levenshtein
-openpyxl  # só se estiver a usar Excel — mas vamos removê-lo!
