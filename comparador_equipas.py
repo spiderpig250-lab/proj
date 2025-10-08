@@ -15,7 +15,7 @@ print("Status:", r.status_code)
 print("Primeiras 200 chars:", r.text[:200])
 
 st.set_page_config(page_title="Comparador Tático Inteligente", layout="wide")
-st.title("Comparador Tático Inteligente")
+
 
 def highlight(text):
     return f"<span style='font-weight:bold; background-color:#ffebee; padding:2px 4px; border-radius:3px; color:#c62828;'>{text}</span>"
