@@ -1593,9 +1593,9 @@ df_jornada = df_h if home_liga == away_liga else df_h
 matchday = get_current_matchday(df_jornada, is_new_league=is_new_league)
 
 stadium = STADIUMS.get(home_team, "Estádio [não disponível]")
-linhas.append("")
-linhas.append("")
+
 linhas.append(f"**{home_team}** e **{away_team}** defrontam-se na **{matchday}ª jornada** da {home_liga if home_liga == away_liga else 'competição'}, no estádio **{stadium}**, em {home_team}.")
+linhas.append('<br style="margin-bottom: 20px;">')
 linhas.append("")
 # --- ANÁLISE DA EQUIPA DA CASA ---
 
@@ -1613,9 +1613,13 @@ if s_home['sem_marcar_casa'] > 0:
 # --- FATORES ADICIONAIS PARA A CASA ---
 fatores_casa = []
 if aus_casa == "Ausência ofensiva":
-    fatores_casa.append(f"{highlight(f"DESTAQUE:")}  **{aus_casa} em {home_team}** compromete o seu desempenho criativo e explorador, afetando a profundidade do plantel e podendo também resultar num jogo com menos golos.")
+    fatores_casa.append(f"{highlight(f"DESTAQUE:")}  **{aus_casa} em {home_team}** compromete o seu desempenho organizativo e de contenção, afetando a consistência do setor recuado e podendo também resultar num jogo com maior exposição defensiva e mais golos sofridos.")
 if aus_casa == "2+ Ausências ofensivas":
     fatores_casa.append(f"{highlight(f"DESTAQUE:")}  **{aus_casa} em {home_team}** condicionam de forma substancial o eixo ofensivo, restringindo a profundidade e a versatilidade do plantel, o que conduz a uma quebra na dinâmica ofensiva e a um modelo de jogo menos projetado em ações de ataque.")
+if aus_casa == "Ausência ofensiva":
+    fatores_casa.append(f"{highlight(f"DESTAQUE:")}  **{aus_casa} em {home_team}** compromete o seu desempenho criativo e explorador, afetando a profundidade do plantel e podendo também resultar num jogo com menos golos.")
+if aus_casa == "2+ Ausências ofensivas":
+    fatores_casa.append(f"{highlight(f"DESTAQUE:")}  **{aus_casa} em {home_team}** condicionam de forma substancial o eixo defensivo, restringindo a coesão e a capacidade de reação do setor, o que conduz a uma quebra na consistência coletiva e a um modelo de jogo menos equilibrado e mais vulnerável em ações de contenção.")
 if exp_casa > 0:
     fatores_casa.append(f"{highlight(f"DESTAQUE:")}  **{home_team}: {plural(exp_casa, 'expulsão', 'expulsões')} recente(s)** — risco disciplinar que pode condicionar a estratégia e a rotação.")
 if desc_casa < 3:
@@ -1644,6 +1648,10 @@ if aus_fora == "Ausência ofensiva":
     fatores_fora.append(f"{highlight(f"DESTAQUE:")}  **{aus_fora} em {away_team}** alteram o equilíbrio da equipa, especialmente em zonas-chave do campo.")
 if aus_fora == "2+ Ausências ofensivas":
     fatores_fora.append(f"{highlight(f"DESTAQUE:")}  **{aus_fora} em {away_team}** resultam numa limitação do eixo atacante, o que leva a equipa a perder profundidade e a ver diminuída a sua habitual dinâmica ofensiva, o que se traduz num jogo com menos situações de ataque.")
+if aus_fora == "Ausência defensiva":
+    fatores_fora.append(f"{highlight(f"DESTAQUE:")}  **{aus_fora} em {away_team}** alteram o equilíbrio da equipa, especialmente em zonas mais defensivas e baixas do campo.")
+if aus_fora == "2+ Ausências defensivas":
+    fatores_fora.append(f"{highlight(f"DESTAQUE:")}  **{aus_fora} em {away_team}** resultam numa limitação do eixo defensivo, o que leva a equipa a perder solidez e a ver diminuída a sua habitual organização sem bola, o que se traduz num jogo com maior vulnerabilidade e mais situações de perigo consentidas.")
 if exp_fora > 0:
     fatores_fora.append(f"{highlight(f"DESTAQUE:")}  **{away_team}: {plural(exp_fora, 'expulsão', 'expulsões')} recente(s)** — potencial desequilíbrio na estrutura defensiva.")
 if desc_fora < 3:
