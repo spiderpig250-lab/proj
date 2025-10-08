@@ -1594,6 +1594,7 @@ matchday = get_current_matchday(df_jornada, is_new_league=is_new_league)
 
 stadium = STADIUMS.get(home_team, "Estádio [não disponível]")
 linhas.append('<br style="margin-bottom: 20px;">')
+linhas.append("")
 linhas.append(f"**{home_team}** e **{away_team}** defrontam-se na **{matchday}ª jornada** da {home_liga if home_liga == away_liga else 'competição'}, no estádio **{stadium}**, em {home_team}.")
 
 linhas.append("")
