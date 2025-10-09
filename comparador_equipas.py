@@ -1629,7 +1629,7 @@ if desc_casa < 3:
 if fatores_casa:
     linhas.append("<br>")
     for f in fatores_casa:
-        linhas.append(f"- {f}")
+        linhas.append(f"{f}")
 # --- ANÁLISE DA EQUIPA VISITANTE ---
 linhas.append("<br>")
 linhas.append(f"**{away_team}** está atualmente em **{pos_fora}º lugar** na tabela após {s_away['jogos']} jogos, com **{s_away['vitorias']} vitórias**, {s_away['empates']} empates e **{s_away['derrotas']} derrotas**.")
@@ -1661,7 +1661,7 @@ if desc_fora < 3:
 if fatores_fora:
     linhas.append("<br>")
     for f in fatores_fora:
-        linhas.append(f"- {f}")
+        linhas.append(f"{f}")
 
 # --- CONFRONTOS DIRETOS ---
 if h2h_results:
