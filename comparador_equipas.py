@@ -1815,7 +1815,12 @@ resumo = "\n".join(linhas)
 # ================================================
 # EXIBIÇÃO
 # ================================================
-
+st.markdown(
+        f"<div style='text-align: center; margin-top: 12px; font-size: 1.4em; font-weight: bold;'>"
+        f"ESCOLHA: <b>{pick}</b> <small style='font-weight: normal; font-size: 0.9em;'>({resultado_hip})</small>"
+        f"</div>",
+        unsafe_allow_html=True
+    )
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -1826,12 +1831,7 @@ with col1:
 with col2:
     st.markdown(f"<div style='text-align: center; font-weight: bold; font-size: 1.4em;'>Empate</div>", unsafe_allow_html=True)
     st.markdown(f"<div style='text-align: center; font-size: 1em;'>{px:.2f}%</div>", unsafe_allow_html=True)
-    st.markdown(
-        f"<div style='text-align: center; margin-top: 12px; font-size: 1.4em; font-weight: bold;'>"
-        f"ESCOLHA: <b>{pick}</b> <small style='font-weight: normal; font-size: 0.9em;'>({resultado_hip})</small>"
-        f"</div>",
-        unsafe_allow_html=True
-    )
+
 
 with col3:
     st.markdown(f"<div style='text-align: center; font-weight: bold; font-size: 1.4em;'>{away_team}</div>", unsafe_allow_html=True)
