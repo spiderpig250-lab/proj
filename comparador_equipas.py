@@ -1260,7 +1260,7 @@ def get_last_5_results(df, team_name, is_home_team=True):
                 results.append('E')
 
     # Retornar os últimos 5 (mais recentes no final)
-    return results[-5:]
+    return results[-5:][::-1]
 
 # === ÚLTIMOS 5 RESULTADOS COM CORES ===
 def get_last_5_results_colored(df, team_name):
@@ -1291,7 +1291,7 @@ def get_last_5_results_colored(df, team_name):
                 results.append('<span style="color:#C92C2C; font-weight:bold;">D</span>')  # Vermelho
             else:
                 results.append('<span style="color:#FFC700; font-weight:bold;">E</span>')  # Amarelo
-    return results[-5:]
+    return results[-5:][::-1]
 
 # Obter resultados coloridos
 last5_home_html = get_last_5_results_colored(df_h, home_team)
