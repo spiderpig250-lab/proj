@@ -803,21 +803,29 @@ def build_team_league_map():
     return team_league_map
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
-def load_euro_2024_2025():
-    url = "https://www.football-data.co.uk/mmz4281/2425/all-euro-data-2024-2025.xlsx"
+@st.cache_data(ttl=7200, show_spinner=False)
+def load_season_data(league_code, season_folder):
+    """
+    Carrega dados de uma temporada específica.
+    season_folder: ex: '2425', '2324'
+    """
+    url = f"https://www.football-data.co.uk/mmz4281/{season_folder}/{league_code}.csv"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
     }
     try:
-        response = requests.get(url, headers=headers, timeout=20)
+        response = requests.get(url, headers=headers, timeout=15)
         if response.status_code != 200:
             return pd.DataFrame()
-        df = pd.read_excel(BytesIO(response.content))
+        df = pd.read_csv(StringIO(response.text))
         return df
-    except Exception as e:
-        st.warning(f"Erro ao carregar dados de 2024/25: {e}")
+    except Exception:
         return pd.DataFrame()
+
+
+
+
+
 def load_league_data(code, season, _ver=1):  # <-- adicione _ver=1
 # Ligas que estão em /new/
     new_leagues_codes = {"ARG", "BRA", "MEX", "RUS", "USA", "JPN", "AUT", "CHN", "DNK", "FIN", "IRL", "NOR", "POL", "ROU", "SWE", "SWZ"}  
@@ -1073,18 +1081,34 @@ def calc_rank(df):
 
     ranking = sorted(teams.items(), key=lambda x: (x[1]["p"], x[1]["gm"] - x[1]["gs"]), reverse=True)
     return {team: (i + 1, data["p"]) for i, (team, data) in enumerate(ranking)}
+# Mapeamento: país -> códigos de ligas
+COUNTRY_LEAGUES = {
+    "Espanha": ["SP1", "SP2"],
+    "Inglaterra": ["E0", "E1", "E2", "E3"],
+    "Itália": ["I1", "I2"],
+    "Alemanha": ["D1", "D2"],
+    "França": ["F1", "F2"],
+    "Portugal": ["P1"],
+    "Brasil": ["BRA"],
+    "Argentina": ["ARG"],
+    # Adicione mais conforme necessário
+}
+
+def get_country_from_league(league_name):
+    """Extrai o país do nome da liga (ex: 'Espanha - LaLiga' -> 'Espanha')"""
+    return league_name.split(" - ", 1)[0]
+
 ##### h2h #####
 
 def get_h2h_results(home_team, away_team, home_liga, away_liga, df_current, is_new_league):
     """
-    Retorna lista de resultados H2H nos últimos 12 meses.
+    Retorna lista de resultados H2H das últimas 3 temporadas (2023/24, 2024/25, 2025).
     Cada item: (resultado, gols_home, gols_away)
     """
     h2h = []
 
-    # --- 1. Procurar no DataFrame atual (2025) ---
+    # --- 1. Temporada atual (2025) ---
     if not df_current.empty:
-        # Detectar layout
         if 'HomeTeam' in df_current.columns:
             home_col, away_col = 'HomeTeam', 'AwayTeam'
             hg_col, ag_col = 'FTHG', 'FTAG'
@@ -1096,7 +1120,6 @@ def get_h2h_results(home_team, away_team, home_liga, away_liga, df_current, is_n
         else:
             return h2h
 
-        # Filtrar jogos entre as duas equipas
         mask1 = (df_current[home_col] == home_team) & (df_current[away_col] == away_team)
         mask2 = (df_current[home_col] == away_team) & (df_current[away_col] == home_team)
         df_h2h = df_current[mask1 | mask2].copy()
@@ -1109,7 +1132,6 @@ def get_h2h_results(home_team, away_team, home_liga, away_liga, df_current, is_n
             else:
                 g_home = row[ag_col]
                 g_away = row[hg_col]
-                # Inverter resultado
                 if row[res_col] == 'H':
                     res = 'A'
                 elif row[res_col] == 'A':
@@ -1118,44 +1140,58 @@ def get_h2h_results(home_team, away_team, home_liga, away_liga, df_current, is_n
                     res = 'D'
             h2h.append((res, g_home, g_away))
 
-    # --- 2. Se for liga tradicional, procurar também em 2024/25 ---
-    if not is_new_league and home_liga == away_liga:
-        df_2425 = load_euro_2024_2025()
-        if not df_2425.empty:
-            # Mapear nome da liga para código (ex: "Inglaterra - Premier League" → "E0")
-            code_to_league = {v["code"]: k for k, v in LEAGUE_CONFIG.items()}
-            league_code = None
-            for code, name in code_to_league.items():
-                if name == home_liga:
-                    league_code = code
-                    break
+    # --- 2. Temporadas anteriores (2024/25 e 2023/24) ---
+    if home_liga == away_liga:
+        # Obter código da liga
+        league_code = None
+        for name, cfg in LEAGUE_CONFIG.items():
+            if name == home_liga:
+                league_code = cfg["code"]
+                break
 
-            if league_code and 'Div' in df_2425.columns:
-                df_league_2425 = df_2425[df_2425['Div'] == league_code].copy()
-                if not df_league_2425.empty:
-                    mask1 = (df_league_2425['HomeTeam'] == home_team) & (df_league_2425['AwayTeam'] == away_team)
-                    mask2 = (df_league_2425['HomeTeam'] == away_team) & (df_league_2425['AwayTeam'] == home_team)
-                    df_h2h_2425 = df_league_2425[mask1 | mask2]
+        if league_code:
+            # Carregar 2024/25
+            df_2425 = load_season_data(league_code, "2425")
+            # Carregar 2023/24
+            df_2324 = load_season_data(league_code, "2324")
 
-                    for _, row in df_h2h_2425.iterrows():
-                        if row['HomeTeam'] == home_team:
-                            g_home = row['FTHG']
-                            g_away = row['FTAG']
-                            res = row['FTR']
+            for df_prev in [df_2425, df_2324]:
+                if df_prev.empty:
+                    continue
+
+                if 'HomeTeam' in df_prev.columns:
+                    home_col, away_col = 'HomeTeam', 'AwayTeam'
+                    hg_col, ag_col = 'FTHG', 'FTAG'
+                    res_col = 'FTR'
+                elif 'Home' in df_prev.columns:
+                    home_col, away_col = 'Home', 'Away'
+                    hg_col, ag_col = 'HG', 'AG'
+                    res_col = 'Res'
+                else:
+                    continue
+
+                mask1 = (df_prev[home_col] == home_team) & (df_prev[away_col] == away_team)
+                mask2 = (df_prev[home_col] == away_team) & (df_prev[away_col] == home_team)
+                df_h2h_prev = df_prev[mask1 | mask2]
+
+                for _, row in df_h2h_prev.iterrows():
+                    if row[home_col] == home_team:
+                        g_home = row[hg_col]
+                        g_away = row[ag_col]
+                        res = row[res_col]
+                    else:
+                        g_home = row[ag_col]
+                        g_away = row[hg_col]
+                        if row[res_col] == 'H':
+                            res = 'A'
+                        elif row[res_col] == 'A':
+                            res = 'H'
                         else:
-                            g_home = row['FTAG']
-                            g_away = row['FTHG']
-                            if row['FTR'] == 'H':
-                                res = 'A'
-                            elif row['FTR'] == 'A':
-                                res = 'H'
-                            else:
-                                res = 'D'
-                        h2h.append((res, g_home, g_away))
+                            res = 'D'
+                    h2h.append((res, g_home, g_away))
 
-    # Manter apenas os últimos 5 confrontos (ordem cronológica inversa)
+    # Manter apenas os últimos 5 confrontos (mais recentes no final)
     return h2h[-5:]
-
 # ================================================
 # MAPA LEVE DE EQUIPAS
 # ================================================
@@ -1578,27 +1614,9 @@ if (first_val - second_val) < 25:
 else:
     pick = first_key
 
-# Resultado hipotético
-if pick == "X":
-    g = max(1, round((golos_casa + golos_fora) / 2))
-    resultado_hip = f"{g} - {g}"
-elif pick == "1":
-    gc = max(2, round(golos_casa))
-    gf = min(gc - 1, max(0, round(golos_fora)))
-    resultado_hip = f"{gc} - {gf}"
-elif pick == "2":
-    gf = max(2, round(golos_fora))
-    gc = min(gf - 1, max(0, round(golos_casa)))
-    resultado_hip = f"{gc} - {gf}"
-elif pick in ["1X", "X2"]:
-    g = max(1, round((golos_casa + golos_fora) / 2))
-    resultado_hip = f"{g} - {g}"
-else:
-    gc = max(1, round(golos_casa))
-    gf = max(1, round(golos_fora))
-    if gc == gf:
-        gf += 1
-    resultado_hip = f"{gc} - {gf}"
+
+       
+resultado_hip = f"{(media_gm_casa+media_gs_fora)/2:.0f} - {(media_gm_fora+media_gs_casa)/2:.0f}"
 # === RESUMO NARRATIVO ESTILO FLASHSCORE ===
 linhas = []
 
@@ -1670,7 +1688,7 @@ if aus_fora == "Ausência ofensiva":
 if aus_fora == "2+ Ausências ofensivas":
     fatores_fora.append(f"{highlight(f"DESTAQUE:")}  **{aus_fora} em {away_team}** resultam numa limitação do eixo atacante, o que leva a equipa a perder profundidade e a ver diminuída a sua habitual dinâmica ofensiva, o que se traduz num jogo com menos situações de ataque.")
 if aus_fora == "Ausência defensiva":
-    fatores_fora.append(f"{highlight(f"DESTAQUE:")}  **{aus_fora} em {away_team}** alteram o equilíbrio da equipa, especialmente em zonas mais defensivas e baixas do campo.")
+    fatores_fora.append(f"{highlight(f"DESTAQUE:")}  **{aus_fora} em {away_team}** altera o equilíbrio da equipa, especialmente em zonas mais defensivas e baixas do campo.")
 if aus_fora == "2+ Ausências defensivas":
     fatores_fora.append(f"{highlight(f"DESTAQUE:")}  **{aus_fora} em {away_team}** resultam numa limitação do eixo defensivo, o que leva a equipa a perder solidez e a ver diminuída a sua habitual organização sem bola, o que se traduz num jogo com maior vulnerabilidade e mais situações de perigo consentidas.")
 if exp_fora > 0:
@@ -1686,13 +1704,14 @@ if fatores_fora:
 if h2h_results:
     linhas.append("")
     linhas.append("**Confrontos diretos recentes:**")
-    for res, g_h, g_a in reversed(h2h_results):  # mais recente primeiro
+    linhas.append("<br>")
+    for res, g_h, g_a in h2h_results:  # mais recente primeiro
         if res == 'H':
-            linhas.append(f"- **{home_team} {int(g_h)}-{int(g_a)} {away_team}**")
+            linhas.append("<br>"f"**{home_team} {int(g_h)}-{int(g_a)} {away_team}**")
         elif res == 'A':
-            linhas.append(f"- **{away_team} {int(g_a)}-{int(g_h)} {home_team}**")
+            linhas.append("<br>"f"**{away_team} {int(g_a)}-{int(g_h)} {home_team}**")
         else:
-            linhas.append(f"- **{home_team} {int(g_h)}-{int(g_a)} {away_team}**")
+            linhas.append("<br>"f"**{home_team} {int(g_h)}-{int(g_a)} {away_team}**")
 
 # --- TOP 5 / CONTEXTUALIZAÇÃO ---
 top5_fatores = []
@@ -1729,9 +1748,9 @@ if top5_casa:
         if media_gm_fora > 1.8 or media_gs_fora < 1.2 or sem_sofrer_fora > 3:
             frase_opponent = f"contra **{top5_casa_opponent}**, uma equipa forte fora de casa — um resultado que demonstra a força da **{home_team}** em sair derrotada no seu canteiro, estádio {stadium}."
 
-        top5_fatores.append("<br>"f"**{home_team} {top5_casa_result}** {frase_opponent}")
+        top5_fatores.append(""f"**{home_team} {top5_casa_result}** {frase_opponent}")
     else:
-        top5_fatores.append("<br>"f"**{home_team} {top5_casa_result}** contra **{top5_casa_opponent}**, uma das equipas mais fortes nesta edição da {home_liga} — sinal de robustez e dominância mesmo contra adversários difíceis e disciplinados.")
+        top5_fatores.append(""f"**{home_team} {top5_casa_result}** contra **{top5_casa_opponent}**, uma das equipas mais fortes nesta edição da {home_liga} — sinal de robustez e dominância mesmo contra adversários difíceis e disciplinados.")
 
 if top5_fora:
     stats_opponent = stats_away.get(top5_fora_opponent, {})
