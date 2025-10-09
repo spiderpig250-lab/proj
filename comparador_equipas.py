@@ -1617,9 +1617,9 @@ if aus_casa == "Ausência ofensiva":
     fatores_casa.append(f"{highlight(f"DESTAQUE:")}  **{aus_casa} em {home_team}** compromete o seu desempenho organizativo e de contenção, afetando a consistência do setor recuado e podendo também resultar num jogo com maior exposição defensiva e mais golos sofridos.")
 if aus_casa == "2+ Ausências ofensivas":
     fatores_casa.append(f"{highlight(f"DESTAQUE:")}  **{aus_casa} em {home_team}** condicionam de forma substancial o eixo ofensivo, restringindo a profundidade e a versatilidade do plantel, o que conduz a uma quebra na dinâmica ofensiva e a um modelo de jogo menos projetado em ações de ataque.")
-if aus_casa == "Ausência ofensiva":
+if aus_casa == "Ausência defensiva":
     fatores_casa.append(f"{highlight(f"DESTAQUE:")}  **{aus_casa} em {home_team}** compromete o seu desempenho criativo e explorador, afetando a profundidade do plantel e podendo também resultar num jogo com menos golos.")
-if aus_casa == "2+ Ausências ofensivas":
+if aus_casa == "2+ Ausências defensivas":
     fatores_casa.append(f"{highlight(f"DESTAQUE:")}  **{aus_casa} em {home_team}** condicionam de forma substancial o eixo defensivo, restringindo a coesão e a capacidade de reação do setor, o que conduz a uma quebra na consistência coletiva e a um modelo de jogo menos equilibrado e mais vulnerável em ações de contenção.")
 if exp_casa > 0:
     fatores_casa.append(f"{highlight(f"DESTAQUE:")}  **{home_team}: {plural(exp_casa, 'expulsão', 'expulsões')} recente(s)** — risco disciplinar que pode condicionar a estratégia e a rotação.")
