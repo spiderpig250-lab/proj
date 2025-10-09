@@ -18,7 +18,7 @@ st.set_page_config(page_title="Comparador Tático Inteligente", layout="wide")
 
 
 def highlight(text):
-    return f"<span style='font-weight:bold; background-color:#ffebee; padding:2px 4px; border-radius:3px; color:#c62828;'>{text}</span>"
+    return f"<span style='font-weight:bold; background-color:#ffebee; padding:0.2px 1px; border-radius:1px; color:#c62828;'>{text}</span>"
 
 
 # --- 38 LIGAS (22 originais + 16 novas) - ORDENADAS POR NOME DO PAÍS
@@ -1605,11 +1605,11 @@ linhas.append("<br>")
 linhas.append(f"O registo de golos nesta temporada é de **{s_home['gols_marcados']:.0f}/{s_home['gols_sofridos']:.0f}**, resultando numa diferença de **{s_home['gols_marcados'] - s_home['gols_sofridos']:.0f} golos** e um total de **{pts_casa} pontos** somados.")
 linhas.append("<br>")
 linhas.append(f"Em casa, {home_team} disputou {s_home['jogos_casa']} jogos, registando **{s_home['v_casa']} vitórias**, **{s_home['e_casa']} empates** e **{s_home['d_casa']} derrotas**, com média de **{s_home['media_gm_casa']} golos marcados** e **{s_home['media_gs_casa']} sofridos** por jogo.")
-linhas.append("")
+linhas.append("<br>")
 if s_home['sem_sofrer_casa'] > 0:
-    linhas.append(f"- {highlight(f"DESTAQUE:")}  **{s_home['sem_sofrer_casa']} jogos sem sofrer golos** em casa — evidência de solidez defensiva e forte ambiente no estádio.")
+    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{s_home['sem_sofrer_casa']} jogos sem sofrer golos** em casa — evidência de solidez defensiva e forte ambiente no estádio.")
 if s_home['sem_marcar_casa'] > 0:
-    linhas.append(f"- {highlight(f"DESTAQUE:")}  Falhou em marcar em **{s_home['sem_marcar_casa']} jogos** em casa — sinal de dificuldade ofensiva ou bloqueio tático.")
+    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  Falhou em marcar em **{s_home['sem_marcar_casa']} jogos** em casa — sinal de dificuldade ofensiva ou bloqueio tático.")
 
 # --- FATORES ADICIONAIS PARA A CASA ---
 fatores_casa = []
@@ -1621,8 +1621,10 @@ if aus_casa == "Ausência defensiva":
     fatores_casa.append(f"{highlight(f"DESTAQUE:")}  **{aus_casa} em {home_team}** compromete o seu desempenho organizativo e de contenção, afetando a consistência do setor recuado e podendo também resultar num jogo com maior exposição defensiva e mais golos sofridos.")
 if aus_casa == "2+ Ausências defensivas":
     fatores_casa.append(f"{highlight(f"DESTAQUE:")}  **{aus_casa} em {home_team}** condicionam de forma substancial o eixo defensivo, restringindo a coesão e a capacidade de reação do setor, o que conduz a uma quebra na consistência coletiva e a um modelo de jogo menos equilibrado e mais vulnerável em ações de contenção.")
+
 if exp_casa > 0:
-    fatores_casa.append(f"{highlight(f"DESTAQUE:")}  **{home_team}: {plural(exp_casa, 'expulsão', 'expulsões')} recente(s)** — risco disciplinar que pode condicionar a estratégia e a rotação.")
+    fatores_casa.append("<br>"f"{highlight(f"DESTAQUE:")}  **{home_team}: {plural(exp_casa, 'expulsão', 'expulsões')} recente(s)** — risco disciplinar que pode condicionar a estratégia e a rotação.")
+
 if desc_casa < 3:
     fatores_casa.append(f"{highlight(f"DESTAQUE:")}  **{home_team} com apenas {plural(desc_casa, 'dia', 'dias')} de descanso** — possível fadiga física e mental.")
 
@@ -1631,17 +1633,17 @@ if fatores_casa:
     for f in fatores_casa:
         linhas.append(f"{f}")
 # --- ANÁLISE DA EQUIPA VISITANTE ---
-linhas.append("<br>")
+linhas.append("")
 linhas.append(f"**{away_team}** está atualmente em **{pos_fora}º lugar** na tabela após {s_away['jogos']} jogos, com **{s_away['vitorias']} vitórias**, {s_away['empates']} empates e **{s_away['derrotas']} derrotas**.")
 linhas.append("<br>")
 linhas.append(f"O registo de golos nesta temporada é de **{s_away['gols_marcados']:.0f}/{s_away['gols_sofridos']:.0f}**, resultando numa diferença de **{s_away['gols_marcados'] - s_away['gols_sofridos']:.0f} golos** e contam com **{pts_fora} pontos** conquistados.")
 linhas.append("<br>")
 linhas.append(f"Fora de casa, {away_team} realizou {s_away['jogos_fora']} jogos, registando **{s_away['v_fora']} vitórias**, **{s_away['e_fora']} empates** e **{s_away['d_fora']} derrotas**, com média de **{s_away['media_gm_fora']} golos marcados** e **{s_away['media_gs_fora']} sofridos** por jogo.")
-
+linhas.append("<br>")
 if s_away['sem_sofrer_fora'] > 0:
-    linhas.append(f"- {highlight(f"DESTAQUE:")}  **{s_away['sem_sofrer_fora']} jogos sem sofrer golos** fora de casa — demonstração de organização tática e capacidade de contenção.")
+    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{s_away['sem_sofrer_fora']} jogos sem sofrer golos** fora de casa — demonstração de organização tática e capacidade de contenção.")
 if s_away['sem_marcar_fora'] > 0:
-    linhas.append(f"- {highlight(f"DESTAQUE:")}  Não marcou em **{s_away['sem_marcar_fora']} jogos** fora de casa — indicação de bloqueio ofensivo ou falta de eficácia em espaços reduzidos.")
+    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  Não marcou em **{s_away['sem_marcar_fora']} jogos** fora de casa — indicação de bloqueio ofensivo ou falta de eficácia em espaços reduzidos.")
 
 # --- FATORES ADICIONAIS PARA A FORA ---
 fatores_fora = []
@@ -1654,15 +1656,14 @@ if aus_fora == "Ausência defensiva":
 if aus_fora == "2+ Ausências defensivas":
     fatores_fora.append(f"{highlight(f"DESTAQUE:")}  **{aus_fora} em {away_team}** resultam numa limitação do eixo defensivo, o que leva a equipa a perder solidez e a ver diminuída a sua habitual organização sem bola, o que se traduz num jogo com maior vulnerabilidade e mais situações de perigo consentidas.")
 if exp_fora > 0:
-    fatores_fora.append(f"{highlight(f"DESTAQUE:")}  **{away_team}: {plural(exp_fora, 'expulsão', 'expulsões')} recente(s)** — potencial desequilíbrio na estrutura defensiva.")
+    fatores_fora.append("<br>"f"{highlight(f"DESTAQUE:")}  **{away_team}: {plural(exp_fora, 'expulsão', 'expulsões')} recente(s)** — potencial desequilíbrio na estrutura defensiva.")
 if desc_fora < 3:
-    fatores_fora.append(f"{highlight(f"DESTAQUE:")}  **{away_team} com apenas {plural(desc_fora, 'dia', 'dias')} de descanso** — risco de desgaste acumulado.")
+    fatores_fora.append("<br>"f"{highlight(f"DESTAQUE:")}  **{away_team} com apenas {plural(desc_fora, 'dia', 'dias')} de descanso** — risco de desgaste acumulado.")
 
 if fatores_fora:
     linhas.append("<br>")
     for f in fatores_fora:
         linhas.append(f"{f}")
-
 # --- CONFRONTOS DIRETOS ---
 if h2h_results:
     linhas.append("")
@@ -1710,9 +1711,9 @@ if top5_casa:
         if media_gm_fora > 1.8 or media_gs_fora < 1.2 or sem_sofrer_fora > 3:
             frase_opponent = f"contra **{top5_casa_opponent}**, uma equipa forte fora de casa — um resultado que demonstra a força da **{home_team}** em sair derrotada no seu canteiro, estádio {stadium}."
 
-        top5_fatores.append(f"- **{home_team} {top5_casa_result}** {frase_opponent}")
+        top5_fatores.append("<br>"f"**{home_team} {top5_casa_result}** {frase_opponent}")
     else:
-        top5_fatores.append(f"- **{home_team} {top5_casa_result}** contra **{top5_casa_opponent}**, uma das equipas mais fortes nesta edição da {home_liga} — sinal de robustez e dominância mesmo contra adversários difíceis e disciplinados.")
+        top5_fatores.append("<br>"f"**{home_team} {top5_casa_result}** contra **{top5_casa_opponent}**, uma das equipas mais fortes nesta edição da {home_liga} — sinal de robustez e dominância mesmo contra adversários difíceis e disciplinados.")
 
 if top5_fora:
     stats_opponent = stats_away.get(top5_fora_opponent, {})
@@ -1747,13 +1748,12 @@ if top5_fora:
         if media_gm_casa > 1.8 or media_gs_casa < 1.2 or sem_sofrer_casa > 3:
             frase_opponent = f"contra **{top5_fora_opponent}**, umas das principais equipas da corrida ao título, revelando estar ao nível dos atuais líderes da {away_liga}."
 
-        top5_fatores.append(f"- **{away_team} {top5_fora_result}** {frase_opponent}")
+        top5_fatores.append("<br>"f"**{away_team} {top5_fora_result}** {frase_opponent}")
     else:
-        top5_fatores.append(f"- **{away_team} {top5_fora_result}** contra **{top5_fora_opponent}**, um dos colossos da {away_liga}, atualmente, demonstrando de capacidade para superar adversários de alto nível.")
+        top5_fatores.append("<br>"f"**{away_team} {top5_fora_result}** contra **{top5_fora_opponent}**, um dos colossos da {away_liga}, atualmente, demonstrando de capacidade para superar adversários de alto nível.")
 
 if top5_fatores:
-    linhas.append("<br>")
-    linhas.append("**Fatores contextuais relevantes:**")
+    linhas.append("")
     linhas.extend(top5_fatores)
 
 # --- INTERPRETAÇÃO TÁTICA FINAL ---
