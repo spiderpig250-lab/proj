@@ -1746,7 +1746,7 @@ if top5_casa:
             frase_opponent = f"contra **{top5_casa_opponent}**, uma das equipas de elite da {home_liga} — refltindo numa moral elevada e confiança reforçada."
 
         if media_gm_fora > 1.8 or media_gs_fora < 1.2 or sem_sofrer_fora > 3:
-            frase_opponent = f"contra **{top5_casa_opponent}**, uma equipa forte fora de casa — um resultado que demonstra a força da **{home_team}** em sair derrotada no seu canteiro, estádio {stadium}."
+            frase_opponent = f"contra **{top5_casa_opponent}**, uma equipa forte fora de casa — um resultado que demonstra a força da **{home_team}** em sair derrotada no seu canteiro, Estádio {stadium}."
 
         top5_fatores.append(""f"**{home_team} {top5_casa_result}** {frase_opponent}")
     else:
@@ -1797,36 +1797,109 @@ if top5_fatores:
 linhas.append("")
 linhas.append("**Interpretação tática:**")
 
-base_phrases = {
-    "1": [
-        f"Diante do registo caseiro de **{home_team}** e das dificuldades de **{away_team}** como visitante, a vitória da casa emerge como o desfecho mais lógico, especialmente considerando a sua superioridade estatística e a pressão do público.",
-        f"Com **{home_team}** a demonstrar solidez em casa e **{away_team}** a lutar fora, tudo indica que os pontos ficarão em casa — um resultado que reflete a hierarquia atual das equipas e a sua adaptação ao cenário competitivo.",
-        f"A combinação de um ataque produtivo em casa e uma defesa robusta posiciona **{home_team}** como favorita clara, enquanto **{away_team}** enfrenta um teste de caráter e consistência fora de casa."
-    ],
-    "2": [
-        f"Apesar de jogar fora, **{away_team}** tem argumentos suficientes para levar a melhor sobre uma **{home_team}** inconsistente em casa, aproveitando a sua mobilidade e eficácia tática.",
-        f"O equilíbrio defensivo de **{away_team}** fora de casa pode ser a chave para surpreender uma **{home_team}** que não convence em casa, especialmente se conseguir explorar espaços e transições rápidas.",
-        f"Com **{away_team}** a mostrar maturidade e eficiência nos últimos jogos, a aposta em vitória do visitante é justificada — um desafio que exige foco e precisão, mas que está ao alcance da equipa visitante."
-    ],
-    "X": [
-        f"Face à paridade entre as duas formações — ambas com tendência para o empate nos seus respetivos cenários — o resultado igualado é o mais coerente, reflectindo a simetria tática e a cautela estratégica.",
-        f"Quando duas equipas demonstram tanta dificuldade em impor-se, o empate acaba por ser a conclusão mais natural — um desfecho que honra a competitividade e a prudência de ambas as formações.",
-        f"Num confronto onde nenhuma equipa domina claramente, o empate representa o equilíbrio justo — um resultado que reconhece a qualidade defensiva e a contenção ofensiva de ambos os lados."
-    ],
-    "1X": [
-        f"**{home_team}** pode não vencer, mas dificilmente perderá em casa, especialmente contra um **{away_team}** com pouca ambição fora — um cenário que favorece a manutenção de pontos no seu reduto.",
-        f"Mesmo que não vença, **{home_team}** tem argumentos defensivos para garantir pelo menos um ponto em casa, numa partida que exigirá paciência e gestão de riscos.",
-        f"Com **{home_team}** a não perder em casa há vários jogos e **{away_team}** a mostrar inconsistência fora, a aposta em 1X é estratégica — um resultado que minimiza riscos e maximiza segurança."
-    ],
-    "X2": [
-        f"**{away_team}** demonstra suficiente solidez fora para evitar a derrota, mesmo diante de uma **{home_team}** com alguma qualidade caseira — um cenário que valoriza a adaptabilidade e a resiliência da equipa visitante.",
-        f"Com **{away_team}** a não perder fora há vários jogos, e **{home_team}** a mostrar inconsistência em casa, a aposta em X2 é estratégica — um desfecho que reconhece a capacidade de resposta e a maturidade da equipa visitante.",
-        f"Num confronto onde a equipa da casa não consegue impor-se e a visitante se mostra organizada, o empate ou vitória do visitante é o cenário mais plausível — um resultado que reflete a realidade tática e o desempenho recente."
+def generate_dynamic_phrase(home_team, away_team, pick, p1, px, p2):
+    """
+    Gera uma frase de interpretação tática única com vocabulário rico e estrutura variada.
+    """
+    
+    # === BLOCOS MODULARES ===
+    subjects_1 = [
+        f"Diante da **fortaleza caseira** de **{home_team}**",
+        f"Com **{home_team}** a erguer-se como **senhor do seu território**",
+        f"Face à **consistência tática** de **{home_team}** em casa",
+        f"Dada a **autoridade ofensiva** de **{home_team}** no seu reduto",
+        f"Considerando a **resiliência defensiva** de **{home_team}** em casa"
     ]
-}
+    
+    subjects_2 = [
+        f"Apesar da **fragilidade itinerante** de **{away_team}**",
+        f"contra um **{away_team}** que tropeça sistematicamente fora de casa",
+        f"enquanto **{away_team}** luta para encontrar identidade longe do seu lar",
+        f"frente a uma **{away_team}** marcada por hesitações externas",
+        f"numa altura em que **{away_team}** carece de clareza ofensiva fora de portas"
+    ]
+    
+    verbs_1 = [
+        "a vitória da casa impõe-se como desfecho natural",
+        "os três pontos tendem a permanecer sob o teto do anfitrião",
+        "o prognóstico favorece claramente os donos do espetáculo",
+        "a balança pende inequivocamente para o lado caseiro",
+        "a noite promete pertencer aos senhores da casa"
+    ]
+    
+    subjects_2_win = [
+        f"**{away_team}** chega com a **mentalidade de quem não teme fronteiras**",
+        f"Enquanto **{home_team}** oscila entre ambição e inconstância",
+        f"Com **{away_team}** a transformar-se numa **máquina de capitalizar erros alheios**",
+        f"Longe de ser um mero visitante, **{away_team}** atua como **predador de redutos**",
+        f"Diante da **vulnerabilidade caseira** de **{home_team}**"
+    ]
+    
+    verbs_2 = [
+        "a vitória do visitante emerge como prognóstico tecnicamente fundamentado",
+        "a equipa visitante parte com argumentos sólidos para levar os três pontos",
+        "o desfecho mais coerente aponta para a superioridade dos forasteiros",
+        "a conjuntura favorece claramente os que chegam de fora",
+        "a vitória fora de casa surge como consequência de um projeto tático superior"
+    ]
+    
+    subjects_draw = [
+        f"Num embate onde **ataque e defesa se neutralizam**",
+        f"Quando dois blocos compactos se encontram",
+        f"Face à **paridade tática** entre as formações",
+        f"Num duelo marcado por **inteligência posicional**",
+        f"Diante do **respeito mútuo** que define este confronto"
+    ]
+    
+    verbs_draw = [
+        "o empate emerge como o veredito mais justo",
+        "o resultado igualado é a conclusão matemática mais lógica",
+        "a partilha dos pontos é o desfecho que honra a competitividade",
+        "o equilíbrio justo se expressa na igualdade do marcador",
+        "o empate representa o reconhecimento tácito de forças equivalentes"
+    ]
+    
+    # === LÓGICA DE SELEÇÃO ===
+    if pick == "1":
+        subject = random.choice(subjects_1)
+        complement = random.choice(subjects_2)
+        verb = random.choice(verbs_1)
+        return f"{subject} {complement}, {verb}."
+    
+    elif pick == "2":
+        subject = random.choice(subjects_2_win)
+        verb = random.choice(verbs_2)
+        return f"{subject}, {verb}."
+    
+    elif pick == "X":
+        subject = random.choice(subjects_draw)
+        verb = random.choice(verbs_draw)
+        return f"{subject}, {verb}."
+    
+    elif pick == "1X":
+        phrases = [
+            f"**{home_team}** construiu uma **fortaleza quase inexpugnável** em casa, enquanto **{away_team}** não demonstra capacidade de assalto fora — a não derrota da equipa da casa é praticamente garantida.",
+            f"Mesmo que a vitória não se concretize, **{home_team}** possui **argumentos defensivos robustos** para assegurar, no mínimo, a partilha dos pontos frente a um **{away_team}** carente de mordente ofensivo.",
+            f"Com **resiliência tática** em casa e o **apoio incondicional do seu público**, **{home_team}** raramente sucumbe no seu reduto — **{away_team}** terá um desafio hercúleo para levar algo mais do que um empate.",
+            f"A **base defensiva sólida** de **{home_team}** contrasta com a **inconsistência estrutural** de **{away_team}** fora de casa, criando um cenário onde a não derrota da equipa anfitriã é o desfecho mais coerente.",
+            f"**{home_team}** domina os seus domínios com autoridade, enquanto **{away_team}** se debate com **falta de eficácia externa** — a aposta em 1X é sinónimo de prudência inteligente."
+        ]
+        return random.choice(phrases)
+    
+    elif pick == "X2":
+        phrases = [
+            f"**{away_team}** demonstra **maturidade competitiva** fora de casa, contrastando com a **instabilidade caseira** de **{home_team}** — a não derrota da equipa visitante é um prognóstico sólido.",
+            f"Enquanto **{home_team}** luta por consistência no seu reduto, **{away_team}** apresenta-se como uma **unidade coesa e pragmática fora de portas** — a conjuntura favorece claramente os visitantes.",
+            f"Com **disciplina defensiva exemplar** e **eficácia em momentos-chave**, **{away_team}** possui o perfil ideal para capitalizar os **lapsos caseiros** de **{home_team}**.",
+            f"**{away_team}** transformou-se numa **especialista em neutralizar redutos hostis**, e **{home_team}** tem sido generoso em conceder oportunidades em casa — a aposta em X2 reflete uma análise realista.",
+            f"Num confronto onde **{home_team}** falha em impor o seu jogo em casa e **{away_team}** demonstra **capacidade de adaptação tática fora**, o empate ou vitória do visitante emerge como o cenário mais plausível."
+        ]
+        return random.choice(phrases)
+    
+    else:
+        return f"A análise aponta para **{pick}** como resultado mais provável."
 
-
-frase_final = random.choice(base_phrases.get(pick, [f"A análise aponta para **{pick}** como resultado mais provável."]))
+frase_final = generate_dynamic_phrase(home_team, away_team, pick, p1, px, p2)
 linhas.append(frase_final)
 
 resumo = "\n".join(linhas)
