@@ -1073,10 +1073,18 @@ def calc_rank(df):
 
     ranking = sorted(teams.items(), key=lambda x: (x[1]["p"], x[1]["gm"] - x[1]["gs"]), reverse=True)
     return {team: (i + 1, data["p"]) for i, (team, data) in enumerate(ranking)}
+##### h2h #####
+
 def get_h2h_results(home_team, away_team, home_liga, away_liga, df_current, is_new_league):
+    """
+    Retorna lista de resultados H2H nos últimos 12 meses.
+    Cada item: (resultado, gols_home, gols_away)
+    """
     h2h = []
 
+    # --- 1. Procurar no DataFrame atual (2025) ---
     if not df_current.empty:
+        # Detectar layout
         if 'HomeTeam' in df_current.columns:
             home_col, away_col = 'HomeTeam', 'AwayTeam'
             hg_col, ag_col = 'FTHG', 'FTAG'
@@ -1088,9 +1096,10 @@ def get_h2h_results(home_team, away_team, home_liga, away_liga, df_current, is_n
         else:
             return h2h
 
+        # Filtrar jogos entre as duas equipas
         mask1 = (df_current[home_col] == home_team) & (df_current[away_col] == away_team)
         mask2 = (df_current[home_col] == away_team) & (df_current[away_col] == home_team)
-        df_h2h = df_current[mask1 | mask2]
+        df_h2h = df_current[mask1 | mask2].copy()
 
         for _, row in df_h2h.iterrows():
             if row[home_col] == home_team:
@@ -1100,6 +1109,7 @@ def get_h2h_results(home_team, away_team, home_liga, away_liga, df_current, is_n
             else:
                 g_home = row[ag_col]
                 g_away = row[hg_col]
+                # Inverter resultado
                 if row[res_col] == 'H':
                     res = 'A'
                 elif row[res_col] == 'A':
@@ -1108,34 +1118,42 @@ def get_h2h_results(home_team, away_team, home_liga, away_liga, df_current, is_n
                     res = 'D'
             h2h.append((res, g_home, g_away))
 
+    # --- 2. Se for liga tradicional, procurar também em 2024/25 ---
     if not is_new_league and home_liga == away_liga:
-        league_code = None
-        for name, cfg in LEAGUE_CONFIG.items():
-            if name == home_liga:
-                league_code = cfg["code"]
-                break
-        if league_code:
-            df_prev = load_previous_season_data(league_code)
-            if not df_prev.empty:
-                mask1 = (df_prev['HomeTeam'] == home_team) & (df_prev['AwayTeam'] == away_team)
-                mask2 = (df_prev['HomeTeam'] == away_team) & (df_prev['AwayTeam'] == home_team)
-                df_h2h_prev = df_prev[mask1 | mask2]
-                for _, row in df_h2h_prev.iterrows():
-                    if row['HomeTeam'] == home_team:
-                        g_home = row['FTHG']
-                        g_away = row['FTAG']
-                        res = row['FTR']
-                    else:
-                        g_home = row['FTAG']
-                        g_away = row['FTHG']
-                        if row['FTR'] == 'H':
-                            res = 'A'
-                        elif row['FTR'] == 'A':
-                            res = 'H'
-                        else:
-                            res = 'D'
-                    h2h.append((res, g_home, g_away))
+        df_2425 = load_euro_2024_2025()
+        if not df_2425.empty:
+            # Mapear nome da liga para código (ex: "Inglaterra - Premier League" → "E0")
+            code_to_league = {v["code"]: k for k, v in LEAGUE_CONFIG.items()}
+            league_code = None
+            for code, name in code_to_league.items():
+                if name == home_liga:
+                    league_code = code
+                    break
 
+            if league_code and 'Div' in df_2425.columns:
+                df_league_2425 = df_2425[df_2425['Div'] == league_code].copy()
+                if not df_league_2425.empty:
+                    mask1 = (df_league_2425['HomeTeam'] == home_team) & (df_league_2425['AwayTeam'] == away_team)
+                    mask2 = (df_league_2425['HomeTeam'] == away_team) & (df_league_2425['AwayTeam'] == home_team)
+                    df_h2h_2425 = df_league_2425[mask1 | mask2]
+
+                    for _, row in df_h2h_2425.iterrows():
+                        if row['HomeTeam'] == home_team:
+                            g_home = row['FTHG']
+                            g_away = row['FTAG']
+                            res = row['FTR']
+                        else:
+                            g_home = row['FTAG']
+                            g_away = row['FTHG']
+                            if row['FTR'] == 'H':
+                                res = 'A'
+                            elif row['FTR'] == 'A':
+                                res = 'H'
+                            else:
+                                res = 'D'
+                        h2h.append((res, g_home, g_away))
+
+    # Manter apenas os últimos 5 confrontos (ordem cronológica inversa)
     return h2h[-5:]
 
 # ================================================
