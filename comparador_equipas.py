@@ -861,6 +861,7 @@ def load_league_data(code, season, _ver=1):  # <-- adicione _ver=1
 # ================================================
 
 
+
 def get_current_matchday(df, is_new_league=False):
     """
     Calcula a jornada atual.
@@ -1192,6 +1193,7 @@ def get_h2h_results(home_team, away_team, home_liga, away_liga, df_current, is_n
 
     # Manter apenas os últimos 5 confrontos (mais recentes no final)
     return h2h[-5:]
+
 # ================================================
 # MAPA LEVE DE EQUIPAS
 # ================================================
@@ -1254,6 +1256,14 @@ if not s_home or not s_away:
     st.error("Erro ao carregar dados da equipa.")
     st.stop()
 
+def detect_trends(team_name, stats, is_home_team=True):
+    """
+    Deteta tendências táticas e estatísticas relevantes para uma equipa.
+    """
+    trends = []
+    
+trends_home = detect_trends(home_team, s_home, is_home_team=True)
+trends_away = detect_trends(away_team, s_away, is_home_team=False)
 
 # ================================================
 # ULTIMOS RESULTADOS
@@ -1647,6 +1657,26 @@ if s_home['sem_sofrer_casa'] > 0:
 if s_home['sem_marcar_casa'] > 0:
     linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  Falhou em marcar em **{s_home['sem_marcar_casa']} jogos** em casa — sinal de dificuldade ofensiva ou bloqueio tático.")
 
+        # Invencibilidade em casa
+if s_home['jogos_casa'] >= 5 and s_home['d_casa'] == 0:
+    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{home_team}** não perde em casa há **{s_home['jogos_casa']} jogos consecutivos**.")
+
+	# Dificuldade em casa
+if s_home['jogos_casa'] >= 5 and s_home['v_casa'] == 0:
+    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{home_team}**não venceu nenhum jogo no estádio {home_stadium}** nesta temporada.")    
+
+        # Vitórias consecutivas em casa
+if s_home['jogos_casa'] >= 3 and s_home['v_casa'] == s_home['jogos_casa']:
+    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{home_team}** venceu **todos os últimos {s_home['jogos_casa']} jogos** no seu reduto.")
+              
+        # Ataque produtivo em casa
+if s_home['jogos_casa'] >= 5 and s_home['media_gm_casa'] >= 2.0:
+    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{home_team}** tem uma **média ofensiva de {s_home['media_gm_casa']} golos por jogo** no seu estádio.")
+
+        # Defesa vulnerável em casa
+if s_home['jogos_casa'] >= 5 and s_home['media_gs_casa'] >= 2.0:
+    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{home_team}** sofre em média **{s_away['media_gs_fora']} golos por jogo** em casa.")
+
 # --- FATORES ADICIONAIS PARA A CASA ---
 fatores_casa = []
 if aus_casa == "Ausência ofensiva":
@@ -1681,6 +1711,27 @@ if s_away['sem_sofrer_fora'] > 0:
 if s_away['sem_marcar_fora'] > 0:
     linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  Não marcou em **{s_away['sem_marcar_fora']} jogos** fora de casa — indicação de bloqueio ofensivo ou falta de eficácia em espaços reduzidos.")
 
+        # Invencibilidade fora
+if s_away['jogos_fora'] >= 5 and s_away['d_fora'] == 0:
+    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{away_team}** não perde fora de casa há **{s_away['jogos_fora']} jogos consecutivos**.")    
+
+        # Dificuldades fora
+if s_away['jogos_fora'] >= 4 and s_away['v_fora'] == 0:
+    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{away_team}** ainda **não venceu nenhum jogo fora de casa** nesta temporada.")
+
+        # Vitórias consecutivas fora
+if s_away['jogos_fora'] >= 3 and s_away['v_fora'] == s_away['jogos_fora']:
+    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{away_team}** venceu **todos os últimos {s_away['jogos_fora']} jogos** fora de casa.")
+                      
+        # Ataque produtivo fora
+if s_away['jogos_fora'] >= 5 and s_away['media_gm_fora'] >= 2.0:
+    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{away_team}** tem uma **média ofensiva de {s_away['media_gm_fora']} golos por jogo** fora de casa.")
+
+        # Defesa vulnerável fora
+if s_away['jogos_fora'] >= 5 and s_away['media_gs_fora'] >= 2.0:
+    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{away_team}** sofre em média **{s_away['media_gs_fora']} golos por jogo** como visitante.")
+        
+    
 # --- FATORES ADICIONAIS PARA A FORA ---
 fatores_fora = []
 if aus_fora == "Ausência ofensiva":
@@ -1712,6 +1763,10 @@ if h2h_results:
             linhas.append("<br>"f"**{away_team} {int(g_a)}-{int(g_h)} {home_team}**")
         else:
             linhas.append("<br>"f"**{home_team} {int(g_h)}-{int(g_a)} {away_team}**")
+
+
+
+
 
 # --- TOP 5 / CONTEXTUALIZAÇÃO ---
 top5_fatores = []
