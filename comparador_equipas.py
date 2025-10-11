@@ -1670,11 +1670,11 @@ if s_home['jogos_casa'] >= 3 and s_home['v_casa'] == s_home['jogos_casa']:
     linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{home_team}** venceu **todos os últimos {s_home['jogos_casa']} jogos** no seu reduto.")
               
         # Ataque produtivo em casa
-if s_home['jogos_casa'] >= 5 and s_home['media_gm_casa'] >= 2.0:
+if s_home['jogos_casa'] >= 5 and s_home['media_gm_casa'] >= 1.5:
     linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{home_team}** tem uma **média ofensiva de {s_home['media_gm_casa']} golos por jogo** no seu estádio.")
 
         # Defesa vulnerável em casa
-if s_home['jogos_casa'] >= 5 and s_home['media_gs_casa'] >= 2.0:
+if s_home['jogos_casa'] >= 5 and s_home['media_gs_casa'] >= 1.5:
     linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{home_team}** sofre em média **{s_away['media_gs_fora']} golos por jogo** em casa.")
 
 # --- FATORES ADICIONAIS PARA A CASA ---
@@ -1724,11 +1724,11 @@ if s_away['jogos_fora'] >= 3 and s_away['v_fora'] == s_away['jogos_fora']:
     linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{away_team}** venceu **todos os últimos {s_away['jogos_fora']} jogos** fora de casa.")
                       
         # Ataque produtivo fora
-if s_away['jogos_fora'] >= 5 and s_away['media_gm_fora'] >= 2.0:
+if s_away['jogos_fora'] >= 5 and s_away['media_gm_fora'] >= 1.5:
     linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{away_team}** tem uma **média ofensiva de {s_away['media_gm_fora']} golos por jogo** fora de casa.")
 
         # Defesa vulnerável fora
-if s_away['jogos_fora'] >= 5 and s_away['media_gs_fora'] >= 2.0:
+if s_away['jogos_fora'] >= 5 and s_away['media_gs_fora'] >= 1.5:
     linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{away_team}** sofre em média **{s_away['media_gs_fora']} golos por jogo** como visitante.")
         
     
