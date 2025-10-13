@@ -7,33 +7,23 @@ from io import StringIO
 import pandas as pd
 from io import BytesIO
 
-url = "https://www.football-data.co.uk/new/BRA.csv"
-headers = {"User-Agent": "Mozilla/5.0"}
-
-r = requests.get(url, headers=headers)
-print("Status:", r.status_code)
-print("Primeiras 200 chars:", r.text[:200])
-
 st.set_page_config(page_title="Comparador Tático Inteligente", layout="wide")
-
 
 def highlight(text):
     return f"<span style='font-weight:bold; background-color:#ffebee; padding:0.2px 1px; border-radius:1px; color:#c62828;'>{text}</span>"
 
-
-# --- 38 LIGAS (22 originais + 16 novas) - ORDENADAS POR NOME DO PAÍS
+# --- 38 LIGAS (CORRIGIDO: removido espaço extra no nome da Argentina) ---
 LEAGUE_CONFIG = {
-
     "Bundesliga": {"code": "D1", "season": "2526"},
     "2. Bundesliga": {"code": "D2", "season": "2526"},
-    "Torneo De La Liga Profesional ": {"code": "ARG", "season": "2025"},
+    "Torneo De La Liga Profesional": {"code": "ARG", "season": "2025"},  # REMOVIDO ESPAÇO NO FINAL
     "Austrian Bundesliga": {"code": "AUT", "season": "2025"},
     "Pro League": {"code": "B1", "season": "2526"},
     "Série A Brasileirão": {"code": "BRA", "season": "2025"},
     "Chinese Super League": {"code": "CHN", "season": "2025"},
     "Superligaen": {"code": "DNK", "season": "2025"},
-    "LaLiga" : {"code": "SP1", "season": "2526"},
-    "LaLiga2" : {"code": "SP2", "season": "2526"},
+    "LaLiga": {"code": "SP1", "season": "2526"},
+    "LaLiga2": {"code": "SP2", "season": "2526"},
     "Scothish Premiership": {"code": "SC0", "season": "2526"},
     "Scothish Championship": {"code": "SC1", "season": "2526"},
     "Scotish League One": {"code": "SC2", "season": "2526"},
@@ -55,56 +45,59 @@ LEAGUE_CONFIG = {
     "Eliteserien": {"code": "NOR", "season": "2025"},
     "Liga Portugal": {"code": "P1", "season": "2526"},
     "Ekstraklasa": {"code": "POL", "season": "2025"},
-    "SuperLiga ": {"code": "ROU", "season": "2025"},
+    "SuperLiga": {"code": "ROU", "season": "2025"},
     "Russian Premier League": {"code": "RUS", "season": "2025"},
     "Allsvenskan": {"code": "SWE", "season": "2025"},
     "Super League": {"code": "SWZ", "season": "2025"},
     "Süper Lig": {"code": "T1", "season": "2526"},
-    "Ukrainian Premier League": {"code": "UKR", "season": "2526"},
+    "Ukrainian Premier League": {"code": "UKR", "season": "2025"},
     "MLS": {"code": "USA", "season": "2025"},
 }
 
-
 LEAGUE_GENDER = {
     "Bundesliga": True,
-    "2. Bundesliga": True ,
-    "Torneo De La Liga Profesional ": True ,
-    "Austrian Bundesliga": True ,
-    "Pro League": True ,
+    "2. Bundesliga": True,
+    "Torneo De La Liga Profesional": True,  # CORRIGIDO
+    "Austrian Bundesliga": True,
+    "Pro League": True,
     "Série A - Brasileirão": False,
-    "Chinese Super League": True ,
+    "Chinese Super League": True,
     "Superligaen": True,
-    "LaLiga" :  True,
-    "LaLiga2" :  True,
-    "Scothis Premiership":  True,
-    "Scothis Championship":  True,
-    "Scotish League One":  True,
-    "Scothis League Two":  True,
-    "Veikkausliiga":  True,
-    "Ligue 1":  True,
-    "Ligue 2":  True,
-    "A1 Ethniki Katigoria":  True,
-    "Eredivisie":  True,
-    "Premier League":  True,
+    "LaLiga": True,
+    "LaLiga2": True,
+    "Scothis Premiership": True,
+    "Scothis Championship": True,
+    "Scotish League One": True,
+    "Scothis League Two": True,
+    "Veikkausliiga": True,
+    "Ligue 1": True,
+    "Ligue 2": True,
+    "A1 Ethniki Katigoria": True,
+    "Eredivisie": True,
+    "Premier League": True,
     "Championship": True,
-    "League One":  True,
-    "League Two":  True,
-    "League of Ireland Premier Division":  True,
-    "Serie A":  True,
-    "Serie B":  True,
-    "J1 League":  True,
-    "Liga MX":  True,
-    "Eliteserien":  True,
-    "Liga Portugal":  True,
-    "Ekstraklasa":  True,
-    "SuperLiga ":  True,
-    "Russian Premier League":  True,
-    "Allsvenskan":  True,
-    "Super League":  True,
-    "Süper Lig":  True,
-    "Ukrainian Premier League":  True,
-    "MLS":  True,
+    "League One": True,
+    "League Two": True,
+    "League of Ireland Premier Division": True,
+    "Serie A": True,
+    "Serie B": True,
+    "J1 League": True,
+    "Liga MX": True,
+    "Eliteserien": True,
+    "Liga Portugal": True,
+    "Ekstraklasa": True,
+    "SuperLiga": True,  # CORRIGIDO
+    "Russian Premier League": True,
+    "Allsvenskan": True,
+    "Super League": True,
+    "Süper Lig": True,
+    "Ukrainian Premier League": True,
+    "MLS": True,
 }
+
+# ... (STADIUMS mantém-se igual - omitido por brevidade) ...
+# [MANTENHA TODO O SEU DICIONÁRIO STADIUMS AQUI]
+
 
 STADIUMS = {
     # 🇦🇹 Áustria
@@ -770,45 +763,14 @@ STADIUMS = {
 }
 
 
-# --- LISTA LEVE DE TODAS AS EQUIPAS (SÓ NOMES E LIGA) ---
-@st.cache_data(ttl=86400)  # atualiza uma vez por dia
-def build_team_league_map():
-    team_league_map = {}
-    for league_name, cfg in LEAGUE_CONFIG.items():
-        # Carregar apenas o CSV bruto (sem processar estatísticas)
-        df = load_league_data(cfg["code"], cfg["season"])
-        if df.empty:
-            continue
-        
-        # Corrigir BOM
-        if df.columns[0].startswith("ï»¿"):
-            df.columns = df.columns.str.replace("ï»¿", "", regex=False)
 
-        # Detectar colunas de equipas
-        if 'HomeTeam' in df.columns:
-            teams = set(df['HomeTeam'].dropna().unique()) | set(df['AwayTeam'].dropna().unique())
-        elif 'Home' in df.columns:
-            teams = set(df['Home'].dropna().unique()) | set(df['Away'].dropna().unique())
-        else:
-            continue
 
-        for team in teams:
-            # Garantir que não há duplicados com nomes iguais em ligas diferentes
-            label = f"{team} ({league_name})"
-            team_league_map[label] = {
-                "team": team,
-                "league": league_name
-            }
-    
-    return team_league_map
-
+# ================================================
+# FUNÇÕES DE CARREGAMENTO
+# ================================================
 
 @st.cache_data(ttl=7200, show_spinner=False)
 def load_season_data(league_code, season_folder):
-    """
-    Carrega dados de uma temporada específica.
-    season_folder: ex: '2425', '2324'
-    """
     url = f"https://www.football-data.co.uk/mmz4281/{season_folder}/{league_code}.csv"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
@@ -822,87 +784,91 @@ def load_season_data(league_code, season_folder):
     except Exception:
         return pd.DataFrame()
 
-
-
-
-
-def load_league_data(code, season, _ver=1):  # <-- adicione _ver=1
-# Ligas que estão em /new/
-    new_leagues_codes = {"ARG", "BRA", "MEX", "RUS", "USA", "JPN", "AUT", "CHN", "DNK", "FIN", "IRL", "NOR", "POL", "ROU", "SWE", "SWZ"}  
-
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_league_data(code, season, phase="full"):
+    new_leagues_codes = {"ARG", "BRA", "COL", "MEX", "RUS", "USA"}
     if code in new_leagues_codes:
         url = f"https://www.football-data.co.uk/new/{code}.csv"
     else:
         url = f"https://www.football-data.co.uk/mmz4281/{season}/{code}.csv"
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
-    }
-
+    headers = {"User-Agent": "Mozilla/5.0 ..."}
     try:
         response = requests.get(url, headers=headers, timeout=15)
         if response.status_code != 200:
             return pd.DataFrame()
-
-        # Detectar encoding com BOM
         text = response.text
-        if text.startswith('\ufeff'):  # Remove BOM se presente
+        if text.startswith('\ufeff'):
             text = text[1:]
-
         df = pd.read_csv(StringIO(text))
+        
+        # --- FILTRAGEM POR FASE PARA ARGENTINA ---
+        if code == "ARG" and phase != "full":
+            try:
+                # Forçar parsing de data com múltiplos formatos
+                if 'Date' in df.columns:
+                    # Tentar vários formatos
+                    for fmt in ['%d/%m/%Y', '%d/%m/%y']:
+                        try:
+                            df['Date'] = pd.to_datetime(df['Date'], format=fmt, errors='coerce')
+                            break
+                        except:
+                            continue
+                    # Filtrar só 2025
+                    df = df[df['Date'].dt.year == 2025]
+                    if phase == "apertura":
+                        df = df[df['Date'] <= pd.Timestamp('2025-07-11')]
+                    elif phase == "clausura":
+                        df = df[df['Date'] > pd.Timestamp('2025-07-11')]
+            except Exception as e:
+                st.warning(f"Falha na filtragem por fase: {e}")
+                pass  # Manter df original
+                
         return df
-
     except Exception as e:
+        st.error(f"Erro ao carregar {code}: {e}")
         return pd.DataFrame()
+
+
+
+
+
+
+
 
 
 # ================================================
 # FUNÇÕES DE CÁLCULO
 # ================================================
 
-
-
 def get_current_matchday(df, is_new_league=False):
-    """
-    Calcula a jornada atual.
-    Para ligas novas, filtra por 2025 antes de contar.
-    """
     if df.empty:
         return 1
-
-    # --- Filtrar por 2025 nas ligas novas ---
     if is_new_league and 'Date' in df.columns:
         try:
             df = df.copy()
             df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y', errors='coerce')
             df = df[df['Date'].dt.year == 2025]
         except Exception:
-            pass  # fallback: usar todos os dados
-
-    # Detectar colunas
+            pass
     if 'HomeTeam' in df.columns:
         home_col, away_col = 'HomeTeam', 'AwayTeam'
     elif 'Home' in df.columns:
         home_col, away_col = 'Home', 'Away'
     else:
         return 1
-
     from collections import defaultdict
     games_per_team = defaultdict(int)
-
     for _, row in df.iterrows():
         ht = row[home_col]
         at = row[away_col]
         if pd.notna(ht) and pd.notna(at):
             games_per_team[ht] += 1
             games_per_team[at] += 1
-
     if not games_per_team:
         return 1
-
     max_games = max(games_per_team.values())
     return max_games + 1
-
 
 def plural(num, singular, plural_form):
     return f"{num} {singular}" if num == 1 else f"{num} {plural_form}"
@@ -910,48 +876,26 @@ def plural(num, singular, plural_form):
 def calculate_stats(df, league_name):
     if df.empty:
         return {}
-
     if df.columns[0].startswith("ï»¿"):
         df.columns = df.columns.str.replace("ï»¿", "", regex=False)
-
     if 'HomeTeam' in df.columns and 'FTHG' in df.columns and 'FTR' in df.columns:
         home_col, away_col = 'HomeTeam', 'AwayTeam'
         hg_col, ag_col = 'FTHG', 'FTAG'
         res_col = 'FTR'
-        is_new_league = False
     elif 'Home' in df.columns and 'HG' in df.columns and 'Res' in df.columns:
         home_col, away_col = 'Home', 'Away'
         hg_col, ag_col = 'HG', 'AG'
         res_col = 'Res'
-        is_new_league = True
     else:
         return {}
-
-    if is_new_league and 'Date' in df.columns:
-        try:
-            df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y', errors='coerce')
-            df = df[df['Date'].dt.year == 2025].copy()
-        except Exception:
-            pass
-
-    required = [home_col, away_col, hg_col, ag_col, res_col]
-    if not all(c in df.columns for c in required):
-        return {}
-    df = df[required].dropna()
-    if df.empty:
-        return {}
-
     teams = set(df[home_col].unique()) | set(df[away_col].unique())
     stats = {}
-
     for team in teams:
         home = df[df[home_col] == team]
         away = df[df[away_col] == team]
-
         total = len(home) + len(away)
         if total == 0:
             continue
-
         wins = len(home[home[res_col] == 'H']) + len(away[away[res_col] == 'A'])
         draws = len(home[home[res_col] == 'D']) + len(away[away[res_col] == 'D'])
         losses = len(home[home[res_col] == 'A']) + len(away[away[res_col] == 'H'])
@@ -959,7 +903,6 @@ def calculate_stats(df, league_name):
         ga = home[ag_col].sum() + away[hg_col].sum()
         clean = len(home[home[ag_col] == 0]) + len(away[away[hg_col] == 0])
         fail = len(home[home[hg_col] == 0]) + len(away[away[ag_col] == 0])
-
         h_games = len(home)
         h_w = len(home[home[res_col] == 'H'])
         h_d = len(home[home[res_col] == 'D'])
@@ -968,7 +911,6 @@ def calculate_stats(df, league_name):
         h_ga = home[ag_col].sum()
         h_clean = len(home[home[ag_col] == 0])
         h_fail = len(home[home[hg_col] == 0])
-
         a_games = len(away)
         a_w = len(away[away[res_col] == 'A'])
         a_d = len(away[away[res_col] == 'D'])
@@ -977,14 +919,12 @@ def calculate_stats(df, league_name):
         a_ga = away[hg_col].sum()
         a_clean = len(away[away[hg_col] == 0])
         a_fail = len(away[away[ag_col] == 0])
-
         media_gm = round(gf / total, 2) if total > 0 else 0
         media_gs = round(ga / total, 2) if total > 0 else 0
         media_gm_casa = round(h_gf / h_games, 2) if h_games > 0 else 0
         media_gs_casa = round(h_ga / h_games, 2) if h_games > 0 else 0
         media_gm_fora = round(a_gf / a_games, 2) if a_games > 0 else 0
         media_gs_fora = round(a_ga / a_games, 2) if a_games > 0 else 0
-
         stats[team] = {
             "liga": league_name,
             "jogos": total,
@@ -1020,40 +960,25 @@ def calculate_stats(df, league_name):
         }
     return stats
 
-def calc_rank(df):
+def calc_rank(df, league_name=None):
     if df.empty:
         return {}
-
     if df.columns[0].startswith("ï»¿"):
         df.columns = df.columns.str.replace("ï»¿", "", regex=False)
-
-    # Detectar layout e tipo de liga
     if 'HomeTeam' in df.columns and 'FTHG' in df.columns and 'FTR' in df.columns:
         home_col, away_col = 'HomeTeam', 'AwayTeam'
         hg_col, ag_col = 'FTHG', 'FTAG'
         res_col = 'FTR'
-        is_new_league = False
     elif 'Home' in df.columns and 'HG' in df.columns and 'Res' in df.columns:
         home_col, away_col = 'Home', 'Away'
         hg_col, ag_col = 'HG', 'AG'
         res_col = 'Res'
-        is_new_league = True
     else:
         return {}
-
-    # --- FILTRAR POR 2025 NAS LIGAS NOVAS ---
-    if is_new_league and 'Date' in df.columns:
-        try:
-            df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y', errors='coerce')
-            df = df[df['Date'].dt.year == 2025].copy()
-        except Exception:
-            pass  # fallback: usar todos os dados
-
     required = [home_col, away_col, hg_col, ag_col, res_col]
     if not all(col in df.columns for col in required):
         return {}
     df = df[required].dropna()
-
     teams = {}
     for _, row in df.iterrows():
         ht = row[home_col]
@@ -1061,17 +986,14 @@ def calc_rank(df):
         hg = row[hg_col]
         ag = row[ag_col]
         res = row[res_col]
-
         if ht not in teams:
             teams[ht] = {"p": 0, "gm": 0, "gs": 0}
         if at not in teams:
             teams[at] = {"p": 0, "gm": 0, "gs": 0}
-
         teams[ht]["gm"] += hg
         teams[ht]["gs"] += ag
         teams[at]["gm"] += ag
         teams[at]["gs"] += hg
-
         if res == 'H':
             teams[ht]["p"] += 3
         elif res == 'A':
@@ -1079,9 +1001,9 @@ def calc_rank(df):
         else:
             teams[ht]["p"] += 1
             teams[at]["p"] += 1
-
     ranking = sorted(teams.items(), key=lambda x: (x[1]["p"], x[1]["gm"] - x[1]["gs"]), reverse=True)
     return {team: (i + 1, data["p"]) for i, (team, data) in enumerate(ranking)}
+
 # Mapeamento: país -> códigos de ligas
 COUNTRY_LEAGUES = {
     "Espanha": ["SP1", "SP2"],
@@ -1098,6 +1020,107 @@ COUNTRY_LEAGUES = {
 def get_country_from_league(league_name):
     """Extrai o país do nome da liga (ex: 'Espanha - LaLiga' -> 'Espanha')"""
     return league_name.split(" - ", 1)[0]
+
+# ... (seleção de equipas)
+
+# ================================================
+# MAPA LEVE DE EQUIPAS
+# ================================================
+
+@st.cache_data(ttl=86400)
+def build_team_league_map():
+    team_league_map = {}
+    for league_name, cfg in LEAGUE_CONFIG.items():
+        df = load_league_data(cfg["code"], cfg["season"])
+        if df.empty:
+            continue
+        if df.columns[0].startswith("ï»¿"):
+            df.columns = df.columns.str.replace("ï»¿", "", regex=False)
+        if 'HomeTeam' in df.columns:
+            teams = set(df['HomeTeam'].dropna().unique()) | set(df['AwayTeam'].dropna().unique())
+        elif 'Home' in df.columns:
+            teams = set(df['Home'].dropna().unique()) | set(df['Away'].dropna().unique())
+        else:
+            continue
+        for team in teams:
+            label = f"{team} ({league_name})"
+            team_league_map[label] = {"team": team, "league": league_name}
+    return team_league_map
+
+
+# === SELEÇÃO DE EQUIPAS ===
+team_league_map = build_team_league_map()
+team_labels = sorted(team_league_map.keys(), key=lambda x: x.lower())
+home_label = st.sidebar.selectbox("Equipa da CASA", team_labels, key="home_team")
+away_label = st.sidebar.selectbox("Equipa VISITANTE", team_labels, key="away_team")
+
+if home_label == away_label:
+    st.warning("Escolha duas equipas diferentes.")
+    st.stop()
+
+h_info = team_league_map[home_label]
+a_info = team_league_map[away_label]
+home_team = h_info["team"]
+home_liga = h_info["league"]
+away_team = a_info["team"]
+away_liga = a_info["league"]
+
+# === SELEÇÃO DE FASE (ANTES DO CARREGAMENTO) ===
+phase = "full"
+if "Torneo De La Liga Profesional" in home_liga or "Torneo De La Liga Profesional" in away_liga:
+    phase = st.sidebar.radio(
+        "Fase do Torneo Betano",
+        ["Apertura (até 11/jul)", "Clausura (após 11/jul)", "Temporada completa"],
+        index=2,
+        key="arg_phase"
+    )
+    phase_map = {
+        "Apertura (até 11/jul)": "apertura",
+        "Clausura (após 11/jul)": "clausura",
+        "Temporada completa": "full"
+    }
+    phase = phase_map[phase]
+
+# === FUNÇÃO DE CARREGAMENTO COM FASE ===
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_stats_and_df(league_name, phase="full"):
+    league_name = league_name.strip()  # Remove espaços extras
+    cfg = LEAGUE_CONFIG[league_name]
+    df = load_league_data(cfg["code"], cfg["season"], phase)  # FASE PASSADA AQUI
+    stats = calculate_stats(df, league_name) if not df.empty else {}
+    return stats, df
+
+# === CARREGAR DADOS COM A FASE SELECIONADA ===
+stats_home, df_h = get_stats_and_df(home_liga, phase)
+stats_away, df_a = get_stats_and_df(away_liga, phase)
+
+# === VERIFICAÇÃO DE DADOS ===
+if df_h.empty and "Torneo De La Liga Profesional" in home_liga:
+    st.warning(f"⚠️ Nenhum jogo encontrado para {home_team} na fase '{phase}'.")
+    st.stop()
+if df_a.empty and "Torneo De La Liga Profesional" in away_liga:
+    st.warning(f"⚠️ Nenhum jogo encontrado para {away_team} na fase '{phase}'.")
+    st.stop()
+
+s_home = stats_home.get(home_team, {})
+s_away = stats_away.get(away_team, {})
+
+if not s_home or not s_away:
+    st.error("Erro ao carregar dados da equipa. Verifique se a equipa jogou nesta fase.")
+    st.stop()
+
+
+
+def detect_trends(team_name, stats, is_home_team=True):
+    """
+    Deteta tendências táticas e estatísticas relevantes para uma equipa.
+    """
+    trends = []
+    
+trends_home = detect_trends(home_team, s_home, is_home_team=True)
+trends_away = detect_trends(away_team, s_away, is_home_team=False)
+
+
 
 ##### h2h #####
 
@@ -1195,77 +1218,6 @@ def get_h2h_results(home_team, away_team, home_liga, away_liga, df_current, is_n
     return h2h[-5:]
 
 # ================================================
-# MAPA LEVE DE EQUIPAS
-# ================================================
-
-@st.cache_data(ttl=86400)
-def build_team_league_map():
-    team_league_map = {}
-    for league_name, cfg in LEAGUE_CONFIG.items():
-        df = load_league_data(cfg["code"], cfg["season"])
-        if df.empty:
-            continue
-        if df.columns[0].startswith("ï»¿"):
-            df.columns = df.columns.str.replace("ï»¿", "", regex=False)
-        if 'HomeTeam' in df.columns:
-            teams = set(df['HomeTeam'].dropna().unique()) | set(df['AwayTeam'].dropna().unique())
-        elif 'Home' in df.columns:
-            teams = set(df['Home'].dropna().unique()) | set(df['Away'].dropna().unique())
-        else:
-            continue
-        for team in teams:
-            label = f"{team} ({league_name})"
-            team_league_map[label] = {"team": team, "league": league_name}
-    return team_league_map
-
-# ================================================
-# INTERFACE E SELEÇÃO
-# ================================================
-
-team_league_map = build_team_league_map()
-team_labels = sorted(team_league_map.keys(), key=lambda x: x.lower())
-
-home_label = st.sidebar.selectbox("Equipa da CASA", team_labels, key="home_team")
-away_label = st.sidebar.selectbox("Equipa VISITANTE", team_labels, key="away_team")
-
-if home_label == away_label:
-    st.warning("Escolha duas equipas diferentes.")
-    st.stop()
-
-h_info = team_league_map[home_label]
-a_info = team_league_map[away_label]
-home_team = h_info["team"]
-home_liga = h_info["league"]
-away_team = a_info["team"]
-away_liga = a_info["league"]
-
-@st.cache_data(ttl=3600, show_spinner=False)
-def get_stats_and_df(league_name):
-    cfg = LEAGUE_CONFIG[league_name]
-    df = load_league_data(cfg["code"], cfg["season"])
-    stats = calculate_stats(df, league_name) if not df.empty else {}
-    return stats, df
-
-stats_home, df_h = get_stats_and_df(home_liga)
-stats_away, df_a = get_stats_and_df(away_liga)
-
-s_home = stats_home.get(home_team, {})
-s_away = stats_away.get(away_team, {})
-
-if not s_home or not s_away:
-    st.error("Erro ao carregar dados da equipa.")
-    st.stop()
-
-def detect_trends(team_name, stats, is_home_team=True):
-    """
-    Deteta tendências táticas e estatísticas relevantes para uma equipa.
-    """
-    trends = []
-    
-trends_home = detect_trends(home_team, s_home, is_home_team=True)
-trends_away = detect_trends(away_team, s_away, is_home_team=False)
-
-# ================================================
 # ULTIMOS RESULTADOS
 # ================================================
 
@@ -1349,9 +1301,34 @@ form_away = " ".join(last5_away_html) if last5_away_html else '<span style="colo
 # ================================================
 # PARÂMETROS CONTEXTUAIS (AUSENCIAS, EXPULSÕES, DESCANSO)
 # ================================================
+aus_casa = st.sidebar.selectbox(
+    f"Ausências em {home_team}", 
+    [
+        "Nenhuma",
+        "Ausência ofensiva",
+        "2+ Ausências ofensivas", 
+        "Ausência defensiva",
+        "2+ Ausências defensivas",
+        "Ausência ofensiva + defensiva",
+        "2+ Ausências ofensivas + defensivas"
+    ], 
+    key="aus_casa"
+)
 
-aus_casa = st.sidebar.selectbox(f"Ausências em {home_team}", ["Nenhuma", "Ausência ofensiva", "2+ Ausências ofensivas", "Ausência defensiva", "2+ Ausências defensivas"], key="aus_casa")
-aus_fora = st.sidebar.selectbox(f"Ausências em {away_team}", ["Nenhuma", "Ausência ofensiva", "2+ Ausências ofensivas", "Ausência defensiva", "2+ Ausências defensivas"], key="aus_fora")
+aus_fora = st.sidebar.selectbox(
+    f"Ausências em {away_team}", 
+    [
+        "Nenhuma",
+        "Ausência ofensiva",
+        "2+ Ausências ofensivas", 
+        "Ausência defensiva",
+        "2+ Ausências defensivas",
+        "Ausência ofensiva + defensiva",
+        "2+ Ausências ofensivas + defensivas"
+    ], 
+    key="aus_fora"
+)
+
 exp_casa = st.sidebar.number_input("Expulsões recentes CASA", min_value=0, max_value=5, value=0)
 exp_fora = st.sidebar.number_input("Expulsões recentes FORA", min_value=0, max_value=5, value=0)
 desc_casa = st.sidebar.number_input("Dias de descanso CASA", min_value=1, max_value=10, value=3)
@@ -1468,18 +1445,111 @@ if len(rank_a) >= 5:
 # ================================================
 
 
+def calculate_league_averages(stats_dict):
+    """Calcula médias de golos da liga."""
+    if not stats_dict:
+        return 1.4, 1.2
+    total_gm = sum(s.get("gols_marcados", 0) for s in stats_dict.values())
+    total_gs = sum(s.get("gols_sofridos", 0) for s in stats_dict.values())
+    total_games = sum(s.get("jogos", 0) for s in stats_dict.values())
+    if total_games == 0:
+        return 1.4, 1.2
+    return total_gm / total_games, total_gs / total_games
+
+def calculate_league_percentiles(stats_dict):
+    """Calcula percentis para cada equipa na sua liga."""
+    if not stats_dict:
+        return {}
+    import numpy as np
+    metrics = ['media_gm', 'media_gs']
+    league_data = {metric: [] for metric in metrics}
+    team_names = list(stats_dict.keys())
+    
+    for team, stats in stats_dict.items():
+        league_data['media_gm'].append(stats.get('media_gm', 0))
+        league_data['media_gs'].append(stats.get('media_gs', 0))
+    
+    percentiles = {}
+    for team in team_names:
+        percentiles[team] = {}
+        for metric in metrics:
+            value = stats_dict[team].get(metric, 0)
+            percentile = (np.array(league_data[metric]) <= value).mean() * 100
+            percentiles[team][metric] = min(percentile, 100.0)
+    return percentiles
+
+
+
+
+
+
+# === FUNÇÕES AUXILIARES ===
+def calculate_league_averages(stats_dict):
+    if not stats_dict:
+        return 1.4, 1.2
+    total_gm = sum(s.get("gols_marcados", 0) for s in stats_dict.values())
+    total_gs = sum(s.get("gols_sofridos", 0) for s in stats_dict.values())
+    total_games = sum(s.get("jogos", 0) for s in stats_dict.values())
+    if total_games == 0:
+        return 1.4, 1.2
+    return total_gm / total_games, total_gs / total_games
+
+def calculate_league_percentiles(stats_dict):
+    if not stats_dict:
+        return {}
+    import numpy as np
+    metrics = ['media_gm', 'media_gs']
+    league_data = {metric: [] for metric in metrics}
+    team_names = list(stats_dict.keys())
+    
+    for team, stats in stats_dict.items():
+        league_data['media_gm'].append(stats.get('media_gm', 0))
+        league_data['media_gs'].append(stats.get('media_gs', 0))
+    
+    percentiles = {}
+    for team in team_names:
+        percentiles[team] = {}
+        for metric in metrics:
+            value = stats_dict[team].get(metric, 0)
+            percentile = (np.array(league_data[metric]) <= value).mean() * 100
+            percentiles[team][metric] = min(percentile, 100.0)
+    return percentiles
+
 def poisson_prob(lam, k):
     if lam <= 0 or k < 0:
         return 0.0
     return (lam ** k) * math.exp(-lam) / math.factorial(k)
 
-# Médias base
-media_gm_casa = s_home["media_gm_casa"]
-media_gs_casa = s_home["media_gs_casa"]
-media_gm_fora = s_away["media_gm_fora"]
-media_gs_fora = s_away["media_gs_fora"]
+# === CÁLCULO DE MÉDIAS NORMALIZADAS ===
+# Calcular percentis
+perc_home = calculate_league_percentiles(stats_home)
+perc_away = calculate_league_percentiles(stats_away)
 
-# Ajuste por ausências
+# Obter percentis
+home_attack_pct = perc_home.get(home_team, {}).get('media_gm', 50)
+home_defense_pct = 100 - perc_home.get(home_team, {}).get('media_gs', 50)
+away_attack_pct = perc_away.get(away_team, {}).get('media_gm', 50)
+away_defense_pct = 100 - perc_away.get(away_team, {}).get('media_gs', 50)
+
+# Converter para fatores de força (0.7 a 1.3)
+home_attack_strength = 0.7 + (home_attack_pct / 100) * 0.6
+home_defense_strength = 0.7 + (home_defense_pct / 100) * 0.6
+away_attack_strength = 0.7 + (away_attack_pct / 100) * 0.6
+away_defense_strength = 0.7 + (away_defense_pct / 100) * 0.6
+
+# Médias da liga da casa
+avg_gm_home, avg_gs_home = calculate_league_averages(stats_home)
+league_avg_gm = avg_gm_home
+league_avg_gs = avg_gs_home
+
+# Calcular médias normalizadas (substituem as absolutas)
+media_gm_casa = home_attack_strength * league_avg_gm
+media_gs_casa = home_defense_strength * league_avg_gs
+media_gm_fora = away_attack_strength * league_avg_gm
+media_gs_fora = away_defense_strength * league_avg_gs
+
+# === AJUSTE POR AUSÊNCIAS (SUPORTE A COMBINAÇÕES) ===
+# Casa
 if aus_casa == "Ausência ofensiva":
     media_gm_casa *= 0.5
 elif aus_casa == "2+ Ausências ofensivas":
@@ -1488,7 +1558,14 @@ elif aus_casa == "Ausência defensiva":
     media_gs_casa *= 1.5
 elif aus_casa == "2+ Ausências defensivas":
     media_gs_casa *= 1.75
+elif aus_casa == "Ausência ofensiva + defensiva":
+    media_gm_casa *= 0.5
+    media_gs_casa *= 1.5
+elif aus_casa == "2+ Ausências ofensivas + defensivas":
+    media_gm_casa *= 0.25
+    media_gs_casa *= 1.75
 
+# Fora
 if aus_fora == "Ausência ofensiva":
     media_gm_fora *= 0.5
 elif aus_fora == "2+ Ausências ofensivas":
@@ -1496,6 +1573,12 @@ elif aus_fora == "2+ Ausências ofensivas":
 elif aus_fora == "Ausência defensiva":
     media_gs_fora *= 1.5
 elif aus_fora == "2+ Ausências defensivas":
+    media_gs_fora *= 1.75
+elif aus_fora == "Ausência ofensiva + defensiva":
+    media_gm_fora *= 0.5
+    media_gs_fora *= 1.5
+elif aus_fora == "2+ Ausências ofensivas + defensivas":
+    media_gm_fora *= 0.25
     media_gs_fora *= 1.75
 
 # Calcular golos esperados
@@ -1552,7 +1635,6 @@ p1 = round(p1 / soma * 100, 1)
 px = round(px / soma * 100, 1)
 p2 = round(p2 / soma * 100, 1)
 
-
 # --- Ajuste com base em confrontos diretos (H2H) ---
 bonus_home = 0.0
 bonus_draw = 0.0
@@ -1577,9 +1659,9 @@ px_adj = max(px_adj, 0.01)
 p2_adj = max(p2_adj, 0.01)
 
 total = p1_adj + px_adj + p2_adj
-p1 = p1_adj / total *100
-px = px_adj / total *100
-p2 = p2_adj / total *100
+p1 = p1_adj / total * 100
+px = px_adj / total * 100
+p2 = p2_adj / total * 100
 
 # Arredondar para exibição (2 casas decimais)
 p1_d = round(p1, 2)
@@ -1589,7 +1671,6 @@ p2_d = round(p2, 2)
 # Ajuste visual para somar 1.00
 total_d = p1_d + px_d + p2_d
 if abs(total_d - 1.0) >= 0.01:
-    # Corrigir o maior
     if p1_d >= px_d and p1_d >= p2_d:
         p1_d = round(1.0 - px_d - p2_d, 2)
     elif px_d >= p2_d:
@@ -1597,21 +1678,19 @@ if abs(total_d - 1.0) >= 0.01:
     else:
         p2_d = round(1.0 - p1_d - px_d, 2)
 
-
 # Determinar pick para frase
-if p1 > 0.5:
+if p1 > 50:
     pick = "1"
-elif p2 > 0.5:
+elif p2 > 50:
     pick = "2"
-elif px > 0.4:
+elif px > 40:
     pick = "X"
-elif p1 + px > 0.75:
+elif p1 + px > 75:
     pick = "1X"
-elif px + p2 > 0.75:
+elif px + p2 > 75:
     pick = "X2"
 else:
     pick = "X"
-
 
 # Escolha final
 probs = {"1": p1, "X": px, "2": p2}
@@ -1663,7 +1742,7 @@ if s_home['jogos_casa'] >= 3 and s_home['d_casa'] == 0:
 
 	# Dificuldade em casa
 if s_home['jogos_casa'] >= 3 and s_home['v_casa'] == 0:
-    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{home_team}**não venceu nenhum jogo no estádio {home_stadium}** nesta temporada.")    
+    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{home_team}**não venceu nenhum jogo no estádio {stadium}** nesta temporada.")    
 
         # Vitórias consecutivas em casa
 if s_home['jogos_casa'] >= 3 and s_home['v_casa'] == s_home['jogos_casa']:
