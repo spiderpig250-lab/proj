@@ -830,7 +830,29 @@ def load_league_data(code, season, phase="full"):
         return pd.DataFrame()
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_league_data_full(code, season):
+    """Carrega dados SEM filtragem por fase (para H2H completo)."""
+    new_leagues_codes = {"ARG", "BRA", "COL", "MEX", "RUS", "USA"}
+    if code in new_leagues_codes:
+        url = f"https://www.football-data.co.uk/new/{code}.csv"
+    else:
+        url = f"https://www.football-data.co.uk/mmz4281/{season}/{code}.csv"
 
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+    }
+    try:
+        response = requests.get(url, headers=headers, timeout=15)
+        if response.status_code != 200:
+            return pd.DataFrame()
+        text = response.text
+        if text.startswith('\ufeff'):
+            text = text[1:]
+        df = pd.read_csv(StringIO(text))
+        return df
+    except Exception:
+        return pd.DataFrame()
 
 
 
@@ -1065,6 +1087,10 @@ home_liga = h_info["league"]
 away_team = a_info["team"]
 away_liga = a_info["league"]
 
+
+
+
+
 # === SELEÇÃO DE FASE (ANTES DO CARREGAMENTO) ===
 phase = "full"
 if "Torneo De La Liga Profesional" in home_liga or "Torneo De La Liga Profesional" in away_liga:
@@ -1090,9 +1116,12 @@ def get_stats_and_df(league_name, phase="full"):
     stats = calculate_stats(df, league_name) if not df.empty else {}
     return stats, df
 
+
+
 # === CARREGAR DADOS COM A FASE SELECIONADA ===
 stats_home, df_h = get_stats_and_df(home_liga, phase)
 stats_away, df_a = get_stats_and_df(away_liga, phase)
+
 
 # === VERIFICAÇÃO DE DADOS ===
 if df_h.empty and "Torneo De La Liga Profesional" in home_liga:
@@ -1110,79 +1139,66 @@ if not s_home or not s_away:
     st.stop()
 
 
-
-def detect_trends(team_name, stats, is_home_team=True):
+####h2h####
+def get_h2h_results_full(home_team, away_team, home_liga, away_liga):
     """
-    Deteta tendências táticas e estatísticas relevantes para uma equipa.
-    """
-    trends = []
-    
-trends_home = detect_trends(home_team, s_home, is_home_team=True)
-trends_away = detect_trends(away_team, s_away, is_home_team=False)
-
-
-
-##### h2h #####
-
-def get_h2h_results(home_team, away_team, home_liga, away_liga, df_current, is_new_league):
-    """
-    Retorna lista de resultados H2H das últimas 3 temporadas (2023/24, 2024/25, 2025).
-    Cada item: (resultado, gols_home, gols_away)
+    Retorna H2H COMPLETO (todas as fases + temporadas anteriores).
     """
     h2h = []
-
-    # --- 1. Temporada atual (2025) ---
-    if not df_current.empty:
-        if 'HomeTeam' in df_current.columns:
-            home_col, away_col = 'HomeTeam', 'AwayTeam'
-            hg_col, ag_col = 'FTHG', 'FTAG'
-            res_col = 'FTR'
-        elif 'Home' in df_current.columns:
-            home_col, away_col = 'Home', 'Away'
-            hg_col, ag_col = 'HG', 'AG'
-            res_col = 'Res'
-        else:
-            return h2h
-
-        mask1 = (df_current[home_col] == home_team) & (df_current[away_col] == away_team)
-        mask2 = (df_current[home_col] == away_team) & (df_current[away_col] == home_team)
-        df_h2h = df_current[mask1 | mask2].copy()
-
-        for _, row in df_h2h.iterrows():
-            if row[home_col] == home_team:
-                g_home = row[hg_col]
-                g_away = row[ag_col]
-                res = row[res_col]
-            else:
-                g_home = row[ag_col]
-                g_away = row[hg_col]
-                if row[res_col] == 'H':
-                    res = 'A'
-                elif row[res_col] == 'A':
-                    res = 'H'
-                else:
-                    res = 'D'
-            h2h.append((res, g_home, g_away))
-
-    # --- 2. Temporadas anteriores (2024/25 e 2023/24) ---
+    
+    # --- 1. Temporada atual (2025) - SEM filtragem por fase ---
     if home_liga == away_liga:
-        # Obter código da liga
         league_code = None
         for name, cfg in LEAGUE_CONFIG.items():
             if name == home_liga:
                 league_code = cfg["code"]
                 break
-
         if league_code:
-            # Carregar 2024/25
-            df_2425 = load_season_data(league_code, "2425")
-            # Carregar 2023/24
-            df_2324 = load_season_data(league_code, "2324")
+            df_current = load_league_data_full(league_code, cfg["season"])
+            if not df_current.empty:
+                if 'HomeTeam' in df_current.columns:
+                    home_col, away_col = 'HomeTeam', 'AwayTeam'
+                    hg_col, ag_col = 'FTHG', 'FTAG'
+                    res_col = 'FTR'
+                elif 'Home' in df_current.columns:
+                    home_col, away_col = 'Home', 'Away'
+                    hg_col, ag_col = 'HG', 'AG'
+                    res_col = 'Res'
+                else:
+                    return h2h
 
-            for df_prev in [df_2425, df_2324]:
+                mask1 = (df_current[home_col] == home_team) & (df_current[away_col] == away_team)
+                mask2 = (df_current[home_col] == away_team) & (df_current[away_col] == home_team)
+                df_h2h = df_current[mask1 | mask2].copy()
+
+                for _, row in df_h2h.iterrows():
+                    if row[home_col] == home_team:
+                        g_home = row[hg_col]
+                        g_away = row[ag_col]
+                        res = row[res_col]
+                    else:
+                        g_home = row[ag_col]
+                        g_away = row[hg_col]
+                        if row[res_col] == 'H':
+                            res = 'A'
+                        elif row[res_col] == 'A':
+                            res = 'H'
+                        else:
+                            res = 'D'
+                    h2h.append((res, g_home, g_away))
+
+    # --- 2. Temporadas anteriores (2024/25 e 2023/24) ---
+    if home_liga == away_liga:
+        league_code = None
+        for name, cfg in LEAGUE_CONFIG.items():
+            if name == home_liga:
+                league_code = cfg["code"]
+                break
+        if league_code:
+            for season_folder in ["2425", "2324"]:
+                df_prev = load_season_data(league_code, season_folder)
                 if df_prev.empty:
                     continue
-
                 if 'HomeTeam' in df_prev.columns:
                     home_col, away_col = 'HomeTeam', 'AwayTeam'
                     hg_col, ag_col = 'FTHG', 'FTAG'
@@ -1214,8 +1230,25 @@ def get_h2h_results(home_team, away_team, home_liga, away_liga, df_current, is_n
                             res = 'D'
                     h2h.append((res, g_home, g_away))
 
-    # Manter apenas os últimos 5 confrontos (mais recentes no final)
     return h2h[-5:]
+    return h2h[-5:]
+
+# H2H COMPLETO (ignora a fase selecionada)
+h2h_results = get_h2h_results_full(home_team, away_team, home_liga, away_liga)
+
+
+def detect_trends(team_name, stats, is_home_team=True):
+    """
+    Deteta tendências táticas e estatísticas relevantes para uma equipa.
+    """
+    trends = []
+    
+trends_home = detect_trends(home_team, s_home, is_home_team=True)
+trends_away = detect_trends(away_team, s_away, is_home_team=False)
+
+
+
+
 
 # ================================================
 # ULTIMOS RESULTADOS
@@ -1349,19 +1382,6 @@ pts_casa = rank_h.get(home_team, (0, 0))[1]
 pos_fora = rank_a.get(away_team, (total_a, 0))[0]
 pts_fora = rank_a.get(away_team, (0, 0))[1]
 
-# ================================================
-# H2H
-# ================================================
-
-is_new_league = ('Home' in df_h.columns) if not df_h.empty else ('Home' in df_a.columns)
-h2h_results = get_h2h_results(
-    home_team=home_team,
-    away_team=away_team,
-    home_liga=home_liga,
-    away_liga=away_liga,
-    df_current=df_h if home_liga == away_liga else pd.DataFrame(),
-    is_new_league=is_new_league
-)
 
 # ================================================
 # DETECÇÃO DE TOP 5
@@ -1520,33 +1540,11 @@ def poisson_prob(lam, k):
         return 0.0
     return (lam ** k) * math.exp(-lam) / math.factorial(k)
 
-# === CÁLCULO DE MÉDIAS NORMALIZADAS ===
-# Calcular percentis
-perc_home = calculate_league_percentiles(stats_home)
-perc_away = calculate_league_percentiles(stats_away)
-
-# Obter percentis
-home_attack_pct = perc_home.get(home_team, {}).get('media_gm', 50)
-home_defense_pct = 100 - perc_home.get(home_team, {}).get('media_gs', 50)
-away_attack_pct = perc_away.get(away_team, {}).get('media_gm', 50)
-away_defense_pct = 100 - perc_away.get(away_team, {}).get('media_gs', 50)
-
-# Converter para fatores de força (0.7 a 1.3)
-home_attack_strength = 0.7 + (home_attack_pct / 100) * 0.6
-home_defense_strength = 0.7 + (home_defense_pct / 100) * 0.6
-away_attack_strength = 0.7 + (away_attack_pct / 100) * 0.6
-away_defense_strength = 0.7 + (away_defense_pct / 100) * 0.6
-
-# Médias da liga da casa
-avg_gm_home, avg_gs_home = calculate_league_averages(stats_home)
-league_avg_gm = avg_gm_home
-league_avg_gs = avg_gs_home
-
-# Calcular médias normalizadas (substituem as absolutas)
-media_gm_casa = home_attack_strength * league_avg_gm
-media_gs_casa = home_defense_strength * league_avg_gs
-media_gm_fora = away_attack_strength * league_avg_gm
-media_gs_fora = away_defense_strength * league_avg_gs
+# === MÉDIAS ABSOLUTAS (sem normalização) ===
+media_gm_casa = s_home["media_gm_casa"]
+media_gs_casa = s_home["media_gs_casa"]
+media_gm_fora = s_away["media_gm_fora"]
+media_gs_fora = s_away["media_gs_fora"]
 
 # === AJUSTE POR AUSÊNCIAS (SUPORTE A COMBINAÇÕES) ===
 # Casa
