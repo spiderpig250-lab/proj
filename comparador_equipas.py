@@ -764,14 +764,17 @@ STADIUMS = {
 
 
 
-
 # ================================================
 # FUNÇÕES DE CARREGAMENTO
 # ================================================
 
 @st.cache_data(ttl=7200, show_spinner=False)
 def load_season_data(league_code, season_folder):
-    url = f"https://www.football-data.co.uk/mmz4281/{season_folder}/{league_code}.csv"
+    """
+    Carrega dados de temporadas antigas (2324, 2425).
+    Para TODAS as ligas, os dados estão em mmz4281/.
+    """
+    url = f"https://www.football-data.co.uk/mmz4281/{season_folder}/{league_code}.csv"  # SEM ESPAÇOS!
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
     }
@@ -786,13 +789,20 @@ def load_season_data(league_code, season_folder):
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_league_data(code, season, phase="full"):
+    """Carrega dados da temporada atual (2025 para ligas novas, 2526 para tradicionais)."""
     new_leagues_codes = {"ARG", "BRA", "COL", "MEX", "RUS", "USA"}
+    
+    # --- LIGAS NOVAS: usam /new/ para 2025 ---
     if code in new_leagues_codes:
-        url = f"https://www.football-data.co.uk/new/{code}.csv"
+        url = f"https://www.football-data.co.uk/new/{code}.csv"  # SEM ESPAÇOS!
+    # --- LIGAS TRADICIONAIS: usam mmz4281/2526/ ---
     else:
-        url = f"https://www.football-data.co.uk/mmz4281/{season}/{code}.csv"
+        url = f"https://www.football-data.co.uk/mmz4281/{season}/{code}.csv"  # SEM ESPAÇOS!
 
-    headers = {"User-Agent": "Mozilla/5.0 ..."}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+    }
+
     try:
         response = requests.get(url, headers=headers, timeout=15)
         if response.status_code != 200:
@@ -802,42 +812,34 @@ def load_league_data(code, season, phase="full"):
             text = text[1:]
         df = pd.read_csv(StringIO(text))
         
-        # --- FILTRAGEM POR FASE PARA ARGENTINA ---
-        if code == "ARG" and phase != "full":
+        # --- SEMPRE FILTRAR POR 2025 NAS LIGAS NOVAS ---
+        if code in new_leagues_codes and 'Date' in df.columns:
             try:
-                # Forçar parsing de data com múltiplos formatos
-                if 'Date' in df.columns:
-                    # Tentar vários formatos
-                    for fmt in ['%d/%m/%Y', '%d/%m/%y']:
-                        try:
-                            df['Date'] = pd.to_datetime(df['Date'], format=fmt, errors='coerce')
-                            break
-                        except:
-                            continue
-                    # Filtrar só 2025
-                    df = df[df['Date'].dt.year == 2025]
+                df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y', errors='coerce')
+                df = df[df['Date'].dt.year == 2025]  # Só 2025
+                
+                # --- SÓ DEPOIS APLICAR FILTRAGEM POR FASE (só para Argentina) ---
+                if code == "ARG" and phase != "full":
                     if phase == "apertura":
                         df = df[df['Date'] <= pd.Timestamp('2025-07-11')]
                     elif phase == "clausura":
                         df = df[df['Date'] > pd.Timestamp('2025-07-11')]
-            except Exception as e:
-                st.warning(f"Falha na filtragem por fase: {e}")
-                pass  # Manter df original
+            except Exception:
+                pass
                 
         return df
     except Exception as e:
-        st.error(f"Erro ao carregar {code}: {e}")
         return pd.DataFrame()
-
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_league_data_full(code, season):
     """Carrega dados SEM filtragem por fase (para H2H completo)."""
     new_leagues_codes = {"ARG", "BRA", "COL", "MEX", "RUS", "USA"}
+    
     if code in new_leagues_codes:
-        url = f"https://www.football-data.co.uk/new/{code}.csv"
+        url = f"https://www.football-data.co.uk/new/{code}.csv"  # SEM ESPAÇOS!
     else:
-        url = f"https://www.football-data.co.uk/mmz4281/{season}/{code}.csv"
+        url = f"https://www.football-data.co.uk/mmz4281/{season}/{code}.csv"  # SEM ESPAÇOS!
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
@@ -850,11 +852,12 @@ def load_league_data_full(code, season):
         if text.startswith('\ufeff'):
             text = text[1:]
         df = pd.read_csv(StringIO(text))
+        
+        # --- PARA H2H COMPLETO, NÃO FILTRAR POR 2025 ---
+        # (já que queremos todos os confrontos recentes)
         return df
     except Exception:
         return pd.DataFrame()
-
-
 
 
 
@@ -1119,8 +1122,8 @@ def get_stats_and_df(league_name, phase="full"):
 
 
 # === CARREGAR DADOS COM A FASE SELECIONADA ===
-stats_home, df_h = get_stats_and_df(home_liga, phase)
-stats_away, df_a = get_stats_and_df(away_liga, phase)
+stats_home, df_h = get_stats_and_df(home_liga)
+stats_away, df_a = get_stats_and_df(away_liga)
 
 
 # === VERIFICAÇÃO DE DADOS ===
