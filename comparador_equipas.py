@@ -821,9 +821,9 @@ def load_league_data(code, season, phase="full"):
                 # --- SÓ DEPOIS APLICAR FILTRAGEM POR FASE (só para Argentina) ---
                 if code == "ARG" and phase != "full":
                     if phase == "apertura":
-                        df = df[df['Date'] <= pd.Timestamp('2025-07-11')]
+                        df = df[df['Date'] <= pd.Timestamp('07-11-2025')]
                     elif phase == "clausura":
-                        df = df[df['Date'] > pd.Timestamp('2025-07-11')]
+                        df = df[df['Date'] > pd.Timestamp('07-11-2025')]
             except Exception:
                 pass
                 
