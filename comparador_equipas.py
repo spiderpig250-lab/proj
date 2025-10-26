@@ -790,7 +790,7 @@ def load_season_data(league_code, season_folder):
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_league_data(code, season, phase="full"):
     """Carrega dados da temporada atual (2025 para ligas novas, 2526 para tradicionais)."""
-    new_leagues_codes = {"ARG", "BRA", "COL", "MEX", "RUS", "USA"}
+    new_leagues_codes = {"ARG", "BRA", "COL", "MEX", "RUS", "USA", "AUT", "CHN", "DNK", "FIN", "IRL", "JPN", "ROU", "SWE", "SWZ", "UKR", "POL"}
     
     # --- LIGAS NOVAS: usam /new/ para 2025 ---
     if code in new_leagues_codes:
@@ -816,7 +816,7 @@ def load_league_data(code, season, phase="full"):
         if code in new_leagues_codes and 'Date' in df.columns:
             try:
                 df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y', errors='coerce')
-                df = df[df['Date'].dt.year == 2025]  # Só 2025
+                df = df[df['Date'] > pd.Timestamp('07-11-2025')]  # Só 2025
                 
                 # --- SÓ DEPOIS APLICAR FILTRAGEM POR FASE (só para Argentina) ---
                 if code == "ARG" and phase != "full":
@@ -834,7 +834,7 @@ def load_league_data(code, season, phase="full"):
 @st.cache_data(ttl=3600, show_spinner=False)
 def load_league_data_full(code, season):
     """Carrega dados SEM filtragem por fase (para H2H completo)."""
-    new_leagues_codes = {"ARG", "BRA", "COL", "MEX", "RUS", "USA"}
+    new_leagues_codes = {"ARG", "BRA", "COL", "MEX", "RUS", "USA", "AUT", "CHN", "DNK", "FIN", "IRL", "JPN", "ROU", "SWE", "SWZ", "UKR", "POL"}
     
     if code in new_leagues_codes:
         url = f"https://www.football-data.co.uk/new/{code}.csv"  # SEM ESPAÇOS!
