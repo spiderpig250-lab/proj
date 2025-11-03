@@ -1743,7 +1743,7 @@ if s_home['jogos_casa'] >= 3 and s_home['d_casa'] == 0:
 
 	# Dificuldade em casa
 if s_home['jogos_casa'] >= 3 and s_home['v_casa'] == 0:
-    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{home_team}**não venceu nenhum jogo no estádio {stadium}** nesta temporada.")    
+    linhas.append("<br>"f"{highlight(f"DESTAQUE:")}  **{home_team}**não venceu nenhum jogo no estádio **{stadium}** nesta temporada.")    
 
         # Vitórias consecutivas em casa
 if s_home['jogos_casa'] >= 3 and s_home['v_casa'] == s_home['jogos_casa']:
